@@ -15,7 +15,7 @@ class PrivacyAuthorizationService
     {
         $user = auth()->user();
 
-        if (!$user || $hiddenRoles === null || count($hiddenRoles) === 0) {
+        if (! $user || $hiddenRoles === null || count($hiddenRoles) === 0) {
             return false;
         }
 

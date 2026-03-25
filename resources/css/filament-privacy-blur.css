@@ -1,19 +1,51 @@
-.o-privacy-blur {
+/* Privacy Blur - Base Styles */
+.fi-privacy-blur {
     /* Prevent selection of blurred text to prevent accidental copying of sensitive data */
     user-select: none;
+    pointer-events: auto;
 }
 
-.pb-1 { filter: blur(1px); }
-.pb-2 { filter: blur(2px); }
-.pb-3 { filter: blur(3px); }
-.pb-4 { filter: blur(4px); }
-.pb-5 { filter: blur(5px); }
-.pb-6 { filter: blur(6px); }
-.pb-8 { filter: blur(8px); }
-.pb-10 { filter: blur(10px); }
+/* Blur amounts - different levels of blur intensity */
+.fi-pb-1 { filter: blur(1px); }
+.fi-pb-2 { filter: blur(2px); }
+.fi-pb-3 { filter: blur(3px); }
+.fi-pb-4 { filter: blur(4px); }
+.fi-pb-5 { filter: blur(5px); }
+.fi-pb-6 { filter: blur(6px); }
+.fi-pb-8 { filter: blur(8px); }
+.fi-pb-10 { filter: blur(10px); }
 
-/* Hover support */
-.pb-hover:hover {
+/* Text transparent - hides actual content while blur effect works */
+.fi-text-transparent {
+    color: transparent;
+    text-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+}
+
+/* Hover support - reveal on hover */
+.fi-hover:hover {
     filter: blur(0px) !important;
     user-select: auto !important;
+    color: inherit !important;
+    text-shadow: none !important;
+}
+
+/* Form inputs: remove blur when focused */
+input.fi-privacy-blur:focus,
+textarea.fi-privacy-blur:focus,
+.fi-privacy-blur:focus-within {
+    filter: blur(0px) !important;
+    user-select: auto !important;
+}
+
+/* Click reveal - shown state */
+[data-is-revealed="true"] {
+    filter: blur(0px) !important;
+    user-select: auto !important;
+    color: inherit !important;
+    text-shadow: none !important;
+}
+
+/* Cursor pointer for clickable elements */
+.fi-cursor-pointer {
+    cursor: pointer;
 }

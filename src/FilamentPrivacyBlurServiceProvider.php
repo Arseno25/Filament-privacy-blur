@@ -5,7 +5,6 @@ namespace Arseno25\FilamentPrivacyBlur;
 use Arseno25\FilamentPrivacyBlur\Commands\FilamentPrivacyBlurCommand;
 use Arseno25\FilamentPrivacyBlur\Filament\ColumnPrivacyMacros;
 use Arseno25\FilamentPrivacyBlur\Testing\TestsFilamentPrivacyBlur;
-use Filament\Support\Assets\AlpineComponent;
 use Filament\Support\Assets\Asset;
 use Filament\Support\Assets\Css;
 use Filament\Support\Assets\Js;
@@ -95,6 +94,12 @@ class FilamentPrivacyBlurServiceProvider extends PackageServiceProvider
             fn (): string => view('filament-privacy-blur::toggle-button')->render()
         );
 
+        // Register Alpine.js component script
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::FOOTER,
+            fn (): string => view('filament-privacy-blur::alpine-script')->render()
+        );
+
         ColumnPrivacyMacros::boot();
 
         // Testing
@@ -112,9 +117,7 @@ class FilamentPrivacyBlurServiceProvider extends PackageServiceProvider
     protected function getAssets(): array
     {
         return [
-            // AlpineComponent::make('filament-privacy-blur', __DIR__ . '/../resources/dist/components/filament-privacy-blur.js'),
             Css::make('filament-privacy-blur-styles', __DIR__ . '/../resources/css/filament-privacy-blur.css'),
-            // Js::make('filament-privacy-blur-scripts', __DIR__ . '/../resources/dist/filament-privacy-blur.js'),
         ];
     }
 

@@ -9,23 +9,41 @@ use Filament\Facades\Filament;
 class PrivacyConfigResolver
 {
     /**
-     * Determine if privacy features are globally enabled for the current panel.
+     * Get the plugin instance from the current panel.
      */
-    public static function isEnabledGlobally(): bool
+    protected static function getPlugin(): ?FilamentPrivacyBlurPlugin
     {
         $panel = Filament::getCurrentPanel();
 
-        if (! $panel || ! $panel->hasPlugin('filament-privacy-blur')) {
-            return false;
+        if (! $panel) {
+            return null;
         }
 
         try {
-            $plugin = FilamentPrivacyBlurPlugin::get();
+            /** @var FilamentPrivacyBlurPlugin $plugin */
+            $plugin = $panel->getPlugin('filament-privacy-blur');
 
-            return $plugin->getIsEnabled();
+            return $plugin;
         } catch (\Throwable $e) {
-            return false;
+            return null;
         }
+    }
+
+    /**
+     * Determine if privacy features are globally enabled for the current panel.
+     * Returns true if enabled in plugin OR if config doesn't explicitly disable it.
+     */
+    public static function isEnabledGlobally(): bool
+    {
+        $plugin = self::getPlugin();
+
+        if ($plugin) {
+            return $plugin->getIsEnabled();
+        }
+
+        // Fall back to config if no panel context (e.g., during testing or CLI)
+        // Default to enabled if not explicitly disabled
+        return config('filament-privacy-blur.enabled', true);
     }
 
     /**
@@ -37,13 +55,8 @@ class PrivacyConfigResolver
             return $columnMode;
         }
 
-        try {
-            $plugin = FilamentPrivacyBlurPlugin::get();
-            $panelMode = $plugin->getDefaultMode();
-        } catch (\Throwable $e) {
-            $panelMode = null;
-        }
-
+        $plugin = self::getPlugin();
+        $panelMode = $plugin ? $plugin->getDefaultMode() : null;
         $defaultMode = $panelMode ?? config('filament-privacy-blur.default_mode', 'blur_click');
 
         return PrivacyMode::tryFrom($defaultMode) ?? PrivacyMode::BlurClick;
@@ -55,12 +68,8 @@ class PrivacyConfigResolver
             return $columnBlur;
         }
 
-        try {
-            $plugin = FilamentPrivacyBlurPlugin::get();
-            $panelBlur = $plugin->getBlurAmount();
-        } catch (\Throwable $e) {
-            $panelBlur = null;
-        }
+        $plugin = self::getPlugin();
+        $panelBlur = $plugin ? $plugin->getBlurAmount() : null;
 
         return $panelBlur ?? config('filament-privacy-blur.default_blur_amount', 4);
     }
@@ -79,13 +88,10 @@ class PrivacyConfigResolver
      */
     public static function isColumnExcepted(string $columnName): bool
     {
-        try {
-            $plugin = FilamentPrivacyBlurPlugin::get();
-            $excepted = $plugin->getExceptColumns();
-            if (empty($excepted)) {
-                $excepted = config('filament-privacy-blur.except_columns', []);
-            }
-        } catch (\Throwable $e) {
+        $plugin = self::getPlugin();
+        $excepted = $plugin ? $plugin->getExceptColumns() : [];
+
+        if (empty($excepted)) {
             $excepted = config('filament-privacy-blur.except_columns', []);
         }
 

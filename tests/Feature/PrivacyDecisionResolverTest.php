@@ -2,10 +2,12 @@
 
 use Arseno25\FilamentPrivacyBlur\Enums\PrivacyMode;
 use Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver;
-use Filament\Panel;
+use Illuminate\Support\Facades\Config;
 
 it('returns empty decision if globally disabled', function () {
-    // Assuming panel is not registered in testing without setup
+    // Explicitly disable for this test
+    Config::set('filament-privacy-blur.enabled', false);
+
     $decision = PrivacyDecisionResolver::resolveForColumn('email', null, false);
 
     expect($decision['should_blur'])->toBeFalse()
