@@ -1,7 +1,8 @@
 <?php
 
-namespace VendorName\Skeleton\Tests;
+namespace Arseno25\FilamentPrivacyBlur\Tests;
 
+use Arseno25\FilamentPrivacyBlur\FilamentPrivacyBlurServiceProvider;
 use BladeUI\Heroicons\BladeHeroiconsServiceProvider;
 use BladeUI\Icons\BladeIconsServiceProvider;
 use Filament\Actions\ActionsServiceProvider;
@@ -18,8 +19,6 @@ use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Livewire\LivewireServiceProvider;
 use Orchestra\Testbench\Concerns\WithWorkbench;
 use Orchestra\Testbench\TestCase as Orchestra;
-use RyanChandler\BladeCaptureDirective\BladeCaptureDirectiveServiceProvider;
-use VendorName\Skeleton\SkeletonServiceProvider;
 
 class TestCase extends Orchestra
 {
@@ -31,7 +30,7 @@ class TestCase extends Orchestra
         parent::setUp();
 
         Factory::guessFactoryNamesUsing(
-            fn (string $modelName) => 'VendorName\\Skeleton\\Database\\Factories\\' . class_basename($modelName) . 'Factory'
+            fn (string $modelName) => 'Arseno25\\FilamentPrivacyBlur\\Database\\Factories\\' . class_basename($modelName) . 'Factory'
         );
     }
 
@@ -39,7 +38,6 @@ class TestCase extends Orchestra
     {
         $providers = [
             ActionsServiceProvider::class,
-            BladeCaptureDirectiveServiceProvider::class,
             BladeHeroiconsServiceProvider::class,
             BladeIconsServiceProvider::class,
             FilamentServiceProvider::class,
@@ -51,7 +49,7 @@ class TestCase extends Orchestra
             SupportServiceProvider::class,
             TablesServiceProvider::class,
             WidgetsServiceProvider::class,
-            SkeletonServiceProvider::class,
+            FilamentPrivacyBlurServiceProvider::class,
         ];
 
         sort($providers);
@@ -62,6 +60,13 @@ class TestCase extends Orchestra
     public function getEnvironmentSetUp($app): void
     {
         $app['config']->set('database.default', 'testing');
+        $app['config']->set('app.key', 'base64:HupSn/k+L4CgygNiA/XwT57hD8lP+22d/xX6wT626e8=');
+
+        $migration1 = include __DIR__ . '/../database/migrations/create_privacy_blur_table.php.stub';
+        $migration1->up();
+
+        $migration2 = include __DIR__ . '/../database/migrations/create_privacy_reveal_logs_table.php.stub';
+        $migration2->up();
     }
 
     protected function defineDatabaseMigrations(): void

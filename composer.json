@@ -1,32 +1,30 @@
 {
-    "name": ":vendor_slug/:package_slug",
-    "description": ":package_description",
+    "name": "arseno25/filament-privacy-blur",
+    "description": "This is my package filament-privacy-blur",
     "keywords": [
-        ":vendor_name",
+        "Arseno25",
         "laravel",
         "filamentphp",
         "filament",
         "filament-plugin",
-        ":package_slug"
+        "filament-privacy-blur"
     ],
-    "homepage": "https://github.com/:vendor_slug/:package_slug",
+    "homepage": "https://github.com/arseno25/filament-privacy-blur",
     "support": {
-        "issues": "https://github.com/:vendor_slug/:package_slug/issues",
-        "source": "https://github.com/:vendor_slug/:package_slug"
+        "issues": "https://github.com/arseno25/filament-privacy-blur/issues",
+        "source": "https://github.com/arseno25/filament-privacy-blur"
     },
     "license": "MIT",
     "authors": [
         {
-            "name": ":author_name",
-            "email": "author@domain.com",
+            "name": "Arseno25",
+            "email": "utomnestagumara@gmail.com",
             "role": "Developer"
         }
     ],
     "require": {
         "php": "^8.2",
-        "filament/filament": "^5.0",
-        "filament/forms": "^5.0",
-        "filament/tables": "^5.0",
+        "filament/filament": "^3.0|^4.0|^5.0",
         "spatie/laravel-package-tools": "^1.15.0"
     },
     "require-dev": {
@@ -43,13 +41,13 @@
     },
     "autoload": {
         "psr-4": {
-            "VendorName\\Skeleton\\": "src/",
-            "VendorName\\Skeleton\\Database\\Factories\\": "database/factories/"
+            "Arseno25\\FilamentPrivacyBlur\\": "src/",
+            "Arseno25\\FilamentPrivacyBlur\\Database\\Factories\\": "database/factories/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "VendorName\\Skeleton\\Tests\\": "tests/"
+            "Arseno25\\FilamentPrivacyBlur\\Tests\\": "tests/"
         }
     },
     "scripts": {
@@ -64,10 +62,10 @@
     "extra": {
         "laravel": {
             "providers": [
-                "VendorName\\Skeleton\\SkeletonServiceProvider"
+                "Arseno25\\FilamentPrivacyBlur\\FilamentPrivacyBlurServiceProvider"
             ],
             "aliases": {
-                "Skeleton": "VendorName\\Skeleton\\Facades\\Skeleton"
+                "FilamentPrivacyBlur": "Arseno25\\FilamentPrivacyBlur\\Facades\\FilamentPrivacyBlur"
             }
         }
     },

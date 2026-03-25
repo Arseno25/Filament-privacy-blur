@@ -1,12 +1,12 @@
 <?php
 
-namespace VendorName\Skeleton\Commands;
+namespace Arseno25\FilamentPrivacyBlur\Commands;
 
 use Illuminate\Console\Command;
 
-class SkeletonCommand extends Command
+class FilamentPrivacyBlurCommand extends Command
 {
-    public $signature = 'skeleton';
+    public $signature = 'filament-privacy-blur';
 
     public $description = 'My command';
 
