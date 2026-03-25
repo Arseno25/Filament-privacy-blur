@@ -37,7 +37,6 @@ class FilamentPrivacyBlurPlugin implements Plugin
         FilamentView::registerRenderHook(
             PanelsRenderHook::GLOBAL_SEARCH_AFTER,
             function (): string {
-                /** @phpstan-ignore-next-line */
                 return view('filament-privacy-blur::toggle-button')->render();
             }
         );
@@ -46,7 +45,6 @@ class FilamentPrivacyBlurPlugin implements Plugin
         FilamentView::registerRenderHook(
             PanelsRenderHook::BODY_END,
             function (): string {
-                /** @phpstan-ignore-next-line */
                 return view('filament-privacy-blur::alpine-script')->render();
             }
         );
