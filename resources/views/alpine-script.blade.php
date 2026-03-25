@@ -4,6 +4,7 @@
 
         // Audit URL from Laravel route — avoids hardcoding paths
         const auditUrl = @json(route('filament-privacy-blur.audit'));
+        window.__privacyBlurAuditUrl = auditUrl;
 
         // Global reveal state
         let isGlobalRevealed = false;

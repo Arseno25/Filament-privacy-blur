@@ -50,8 +50,9 @@ class ColumnPrivacyMacros
                                 record: $record
                             ),
                             $meta['privacy_blur_amount'] ?? null,
-                            null,
-                            $meta['privacy_hidden_roles'] ?? null
+                            $record,
+                            $meta['privacy_hidden_roles'] ?? null,
+                            ColumnPrivacyMacros::resolveResourceClass($this)
                         );
 
                         if (! $decision['should_blur'] && ! $decision['should_mask']) {
@@ -106,7 +107,8 @@ class ColumnPrivacyMacros
                         $isAuthorized,
                         $columnBlur,
                         $record,
-                        $hiddenRoles
+                        $hiddenRoles,
+                        ColumnPrivacyMacros::resolveResourceClass($this)
                     );
 
                     // Store decision in metadata for formatStateUsing to access
@@ -179,37 +181,18 @@ class ColumnPrivacyMacros
                             $isAuthorized,
                             $columnBlur,
                             $record,
-                            $hiddenRoles
+                            $hiddenRoles,
+                            ColumnPrivacyMacros::resolveResourceClass($this)
                         );
 
                         // Handle masking first
                         if ($decision['should_mask']) {
-                            $maskStrategy = $meta['mask_strategy'] ?? null;
-
-                            if ($maskStrategy instanceof Closure) {
-                                return app()->call($maskStrategy, ['state' => (string) $state, 'record' => $record]);
-                            }
-
-                            $strategyStr = PrivacyConfigResolver::resolveMaskStrategy(
-                                is_string($maskStrategy) ? $maskStrategy : null
-                            );
-
-                            return app(PrivacyMaskingService::class)->mask($strategyStr, (string) $state);
+                            return ColumnPrivacyMacros::applyMasking($state, $record, $meta['mask_strategy'] ?? null);
                         }
 
                         // Export context — apply masking instead of blur since blur is visual-only
                         if ($decision['should_blur'] && ColumnPrivacyMacros::isExportContext()) {
-                            $maskStrategy = $meta['mask_strategy'] ?? null;
-
-                            if ($maskStrategy instanceof Closure) {
-                                return app()->call($maskStrategy, ['state' => (string) $state, 'record' => $record]);
-                            }
-
-                            $strategyStr = PrivacyConfigResolver::resolveMaskStrategy(
-                                is_string($maskStrategy) ? $maskStrategy : null
-                            );
-
-                            return app(PrivacyMaskingService::class)->mask($strategyStr, (string) $state);
+                            return ColumnPrivacyMacros::applyMasking($state, $record, $meta['mask_strategy'] ?? null);
                         }
 
                         // Handle blur by wrapping in span with CSS classes
@@ -344,6 +327,35 @@ class ColumnPrivacyMacros
         }
     }
 
+    public static function applyMasking(mixed $state, ?Model $record, mixed $maskStrategy): mixed
+    {
+        if ($maskStrategy instanceof Closure) {
+            return app()->call($maskStrategy, ['state' => (string) $state, 'record' => $record]);
+        }
+
+        $strategyStr = PrivacyConfigResolver::resolveMaskStrategy(
+            is_string($maskStrategy) ? $maskStrategy : null
+        );
+
+        return app(PrivacyMaskingService::class)->mask($strategyStr, (string) $state);
+    }
+
+    public static function resolveResourceClass(object $component): ?string
+    {
+        try {
+            if (method_exists($component, 'getLivewire')) {
+                $livewire = $component->getLivewire();
+                if ($livewire && method_exists($livewire, 'getResource')) {
+                    return $livewire::getResource();
+                }
+            }
+        } catch (\Throwable $e) {
+            // Component is not mounted in test
+        }
+
+        return null;
+    }
+
     /**
      * Detect if the current request is an export context.
      * Uses multiple strategies for reliability instead of just routeIs('*.export*').
@@ -353,7 +365,7 @@ class ColumnPrivacyMacros
         $route = request()->route();
         if ($route) {
             $routeName = $route->getName() ?? '';
-            if (str_contains($routeName, 'export')) {
+            if (preg_match('/\bexport\b/', $routeName)) {
                 return true;
             }
         }

@@ -28,7 +28,8 @@ class PrivacyAuditController extends Controller
             revealMode: $validated['mode'],
             recordKey: $validated['record_id'] ?? null,
             resource: $validated['resource'] ?? null,
-            page: url()->previous()
+            page: url()->previous(),
+            panel: $validated['panel'] ?? null
         );
 
         return response()->json(['status' => 'success']);

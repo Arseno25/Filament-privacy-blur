@@ -80,3 +80,18 @@ it('returns empty string if value is empty', function () {
     $service = new PrivacyMaskingService;
     expect($service->mask('email', ''))->toBe('');
 });
+
+it('masks multibyte emails correctly', function () {
+    $service = new PrivacyMaskingService;
+    expect($service->mask('email', 'ün@example.com'))->toBe('**@example.com');
+});
+
+it('masks multibyte names correctly', function () {
+    $service = new PrivacyMaskingService;
+    expect($service->mask('full_name', 'Åsa Björk'))->toBe('Ås* Bj***');
+});
+
+it('masks multibyte phones correctly', function () {
+    $service = new PrivacyMaskingService;
+    expect($service->mask('phone', '+49 ön'))->toBe('+4****');
+});

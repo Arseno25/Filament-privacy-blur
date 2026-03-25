@@ -100,4 +100,20 @@ it('detects export context correctly', function () {
     app()->instance('request', $request);
 
     expect(ColumnPrivacyMacros::isExportContext())->toBeFalse();
+
+    // Test export route
+    $exportRequest = Request::create('/users/export', 'GET');
+    $exportRequest->setRouteResolver(function () use ($exportRequest) {
+        return (new Route('GET', '/users/export', []))->bind($exportRequest)->name('users.export');
+    });
+    app()->instance('request', $exportRequest);
+
+    expect(ColumnPrivacyMacros::isExportContext())->toBeTrue();
+
+    // Test X-Filament-Export header
+    $headerRequest = Request::create('/admin/users', 'GET');
+    $headerRequest->headers->set('X-Filament-Export', 'true');
+    app()->instance('request', $headerRequest);
+
+    expect(ColumnPrivacyMacros::isExportContext())->toBeTrue();
 });

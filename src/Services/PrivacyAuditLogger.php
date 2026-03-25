@@ -16,20 +16,21 @@ class PrivacyAuditLogger
         string $revealMode,
         ?string $recordKey = null,
         ?string $resource = null,
-        ?string $page = null
+        ?string $page = null,
+        ?string $panel = null
     ): void {
         if (! PrivacyConfigResolver::isAuditEnabled()) {
             return;
         }
 
-        $panel = Filament::getCurrentPanel();
+        $panelId = $panel ?? (Filament::getCurrentPanel() ? Filament::getCurrentPanel()->getId() : null);
         $tenant = Filament::getTenant();
         $user = auth()->user();
 
         PrivacyRevealLog::create([
             'user_id' => $user ? $user->getAuthIdentifier() : null,
             'tenant_id' => $tenant ? $tenant->getKey() : null,
-            'panel_id' => $panel ? $panel->getId() : null,
+            'panel_id' => $panelId,
             'resource' => $resource,
             'page' => $page,
             'column_name' => $columnName,
