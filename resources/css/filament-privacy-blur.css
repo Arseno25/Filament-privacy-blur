@@ -3,22 +3,23 @@
     /* Prevent selection of blurred text to prevent accidental copying of sensitive data */
     user-select: none;
     pointer-events: auto;
+    transition: filter 0.3s ease, color 0.3s ease, text-shadow 0.3s ease;
 }
 
-/* Blur amounts - different levels of blur intensity */
+/* Blur amounts - different levels of blur intensity (kept subtle) */
 .fi-pb-1 { filter: blur(1px); }
-.fi-pb-2 { filter: blur(2px); }
-.fi-pb-3 { filter: blur(3px); }
-.fi-pb-4 { filter: blur(4px); }
-.fi-pb-5 { filter: blur(5px); }
-.fi-pb-6 { filter: blur(6px); }
-.fi-pb-8 { filter: blur(8px); }
-.fi-pb-10 { filter: blur(10px); }
+.fi-pb-2 { filter: blur(1.5px); }
+.fi-pb-3 { filter: blur(2px); }
+.fi-pb-4 { filter: blur(2.5px); }
+.fi-pb-5 { filter: blur(3px); }
+.fi-pb-6 { filter: blur(3.5px); }
+.fi-pb-8 { filter: blur(4.5px); }
+.fi-pb-10 { filter: blur(6px); }
 
-/* Text transparent - hides actual content while blur effect works */
+/* Text transparent - softly hides content while blur effect works */
 .fi-text-transparent {
     color: transparent;
-    text-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+    text-shadow: 0 0 6px rgba(0, 0, 0, 0.25);
 }
 
 /* Hover support - reveal on hover */
@@ -45,7 +46,8 @@ textarea.fi-privacy-blur:focus,
     text-shadow: none !important;
 }
 
-/* Cursor pointer for clickable elements */
-.fi-cursor-pointer {
+/* Cursor pointer for clickable elements (both wrapper and inner span) */
+.fi-cursor-pointer,
+[data-privacy-click] {
     cursor: pointer;
 }

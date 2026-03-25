@@ -191,16 +191,16 @@ class ColumnPrivacyMacros
 
                             if ($decision['reveal_enabled']) {
                                 if ($mode === PrivacyMode::BlurClick) {
-                                    // Click to reveal
+                                    // Click to reveal — data attributes are on the outer wrapper via extraAttributes
                                     return new HtmlString(
-                                        "<span class=\"{$blurClass} fi-text-transparent fi-cursor-pointer transition-all duration-300 select-none\" data-privacy-blur=\"true\" data-privacy-click=\"true\">" .
+                                        "<span class=\"{$blurClass} fi-text-transparent fi-cursor-pointer transition-all duration-300 select-none\">" .
                                         e((string) $state) .
                                         '</span>'
                                     );
                                 } elseif ($mode === PrivacyMode::BlurHover) {
                                     // Hover to reveal
                                     return new HtmlString(
-                                        "<span class=\"{$blurClass} fi-hover fi-text-transparent transition-all duration-300 select-none\" data-privacy-blur=\"true\" data-privacy-hover=\"true\">" .
+                                        "<span class=\"{$blurClass} fi-hover fi-text-transparent transition-all duration-300 select-none\">" .
                                         e((string) $state) .
                                         '</span>'
                                     );
@@ -209,7 +209,7 @@ class ColumnPrivacyMacros
 
                             // No reveal - always blurred
                             return new HtmlString(
-                                "<span class=\"{$blurClass} fi-text-transparent transition-all duration-300 select-none\" data-privacy-blur=\"true\">" .
+                                "<span class=\"{$blurClass} fi-text-transparent transition-all duration-300 select-none\">" .
                                 e((string) $state) .
                                 '</span>'
                             );

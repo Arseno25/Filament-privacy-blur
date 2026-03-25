@@ -13,27 +13,45 @@
 
         function updateAllPrivacyElements() {
             document.querySelectorAll('[data-privacy-blur="true"]').forEach(el => {
-                if (!el.hasAttribute('data-privacy-click')) {
-                    updatePrivacyElement(el);
+                // Only toggle the inner spans with fi-privacy-blur class
+                const spans = el.querySelectorAll('span.fi-privacy-blur');
+                spans.forEach(span => {
+                    if (isGlobalRevealed) {
+                        span.classList.remove('fi-text-transparent');
+                        span.setAttribute('data-is-revealed', 'true');
+                    } else {
+                        span.classList.add('fi-text-transparent');
+                        span.removeAttribute('data-is-revealed');
+                    }
+                });
+
+                // Also handle the element itself if it has fi-privacy-blur class
+                if (el.classList.contains('fi-privacy-blur')) {
+                    if (isGlobalRevealed) {
+                        el.classList.remove('fi-text-transparent');
+                        el.setAttribute('data-is-revealed', 'true');
+                    } else {
+                        el.classList.add('fi-text-transparent');
+                        el.removeAttribute('data-is-revealed');
+                    }
                 }
             });
-        }
-
-        function updatePrivacyElement(el) {
-            const shouldShow = isGlobalRevealed;
-            if (shouldShow) {
-                el.classList.remove('fi-text-transparent');
-                el.setAttribute('data-is-revealed', 'true');
-            } else {
-                el.classList.add('fi-text-transparent');
-                el.removeAttribute('data-is-revealed');
-            }
         }
 
         // Handle click-to-reveal elements
         // Use capture phase to intercept clicks before Filament's table row handlers
         document.addEventListener('click', (e) => {
-            const target = e.target.closest('[data-privacy-click]');
+            // Find clickable privacy element — check both the wrapper and inner spans
+            let target = e.target.closest('[data-privacy-click]');
+
+            // Also check if we clicked on a span inside a wrapper
+            if (!target) {
+                const span = e.target.closest('span.fi-privacy-blur');
+                if (span && span.closest('[data-privacy-click]')) {
+                    target = span.closest('[data-privacy-click]');
+                }
+            }
+
             if (!target) return;
 
             // Stop propagation to prevent triggering Filament's edit modal
@@ -41,21 +59,23 @@
             e.stopPropagation();
             e.preventDefault();
 
-            const isRevealed = target.getAttribute('data-is-revealed') === 'true';
+            // Find the inner span that actually has the blur classes
+            const blurSpan = target.querySelector('span.fi-privacy-blur') || target;
+            const isRevealed = blurSpan.getAttribute('data-is-revealed') === 'true';
 
             if (!isRevealed) {
                 // Reveal
-                target.classList.remove('fi-text-transparent');
-                target.setAttribute('data-is-revealed', 'true');
+                blurSpan.classList.remove('fi-text-transparent');
+                blurSpan.setAttribute('data-is-revealed', 'true');
 
                 // Auto-hide after 5 seconds
                 const timeoutId = setTimeout(() => {
-                    target.classList.add('fi-text-transparent');
-                    target.removeAttribute('data-is-revealed');
+                    blurSpan.classList.add('fi-text-transparent');
+                    blurSpan.removeAttribute('data-is-revealed');
                 }, 5000);
 
                 // Store timeout ID to clear if clicked again
-                target.dataset.privacyTimeout = timeoutId;
+                blurSpan.dataset.privacyTimeout = timeoutId;
 
                 // Audit logging
                 if (target.dataset.privacyAudit === 'true') {
@@ -63,13 +83,13 @@
                 }
             } else {
                 // Manual re-blur
-                target.classList.add('fi-text-transparent');
-                target.removeAttribute('data-is-revealed');
+                blurSpan.classList.add('fi-text-transparent');
+                blurSpan.removeAttribute('data-is-revealed');
 
                 // Clear auto-hide timeout if exists
-                if (target.dataset.privacyTimeout) {
-                    clearTimeout(parseInt(target.dataset.privacyTimeout));
-                    delete target.dataset.privacyTimeout;
+                if (blurSpan.dataset.privacyTimeout) {
+                    clearTimeout(parseInt(blurSpan.dataset.privacyTimeout));
+                    delete blurSpan.dataset.privacyTimeout;
                 }
             }
         }, true); // Use capture phase
@@ -94,13 +114,9 @@
             });
         }
 
-        // Initialize: hide all privacy-blur elements by default
-        document.addEventListener('DOMContentLoaded', () => {
-            document.querySelectorAll('[data-privacy-blur="true"]').forEach(el => {
-                if (!el.hasAttribute('data-privacy-hover')) {
-                    el.classList.add('fi-text-transparent');
-                }
-            });
-        });
+        // No DOMContentLoaded init needed!
+        // The blur state is already rendered server-side via formatStateUsing in ColumnPrivacyMacros.
+        // The fi-text-transparent class is included in the HTML spans from PHP.
+        // This avoids conflicts with Livewire/wire:navigate SPA navigation.
     })();
 </script>

@@ -4,6 +4,8 @@ namespace Arseno25\FilamentPrivacyBlur;
 
 use Filament\Contracts\Plugin;
 use Filament\Panel;
+use Filament\Support\Facades\FilamentView;
+use Filament\View\PanelsRenderHook;
 
 class FilamentPrivacyBlurPlugin implements Plugin
 {
@@ -31,7 +33,17 @@ class FilamentPrivacyBlurPlugin implements Plugin
 
     public function boot(Panel $panel): void
     {
-        //
+        // Register Global Reveal Toggle into topbar
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::GLOBAL_SEARCH_AFTER,
+            fn (): string => view('filament-privacy-blur::toggle-button')->render()
+        );
+
+        // Register Alpine.js interaction script in footer
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::BODY_END,
+            fn (): string => view('filament-privacy-blur::alpine-script')->render()
+        );
     }
 
     public function enabled(bool $condition = true): static

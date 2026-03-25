@@ -88,18 +88,6 @@ class FilamentPrivacyBlurServiceProvider extends PackageServiceProvider
             }
         }
 
-        // Register Global Reveal Toggle into Filament Panels
-        FilamentView::registerRenderHook(
-            PanelsRenderHook::GLOBAL_SEARCH_AFTER,
-            fn (): string => view('filament-privacy-blur::toggle-button')->render()
-        );
-
-        // Register Alpine.js component script
-        FilamentView::registerRenderHook(
-            PanelsRenderHook::FOOTER,
-            fn (): string => view('filament-privacy-blur::alpine-script')->render()
-        );
-
         ColumnPrivacyMacros::boot();
 
         // Testing
