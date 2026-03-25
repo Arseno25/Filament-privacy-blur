@@ -7,11 +7,8 @@ use Arseno25\FilamentPrivacyBlur\Filament\ColumnPrivacyMacros;
 use Arseno25\FilamentPrivacyBlur\Testing\TestsFilamentPrivacyBlur;
 use Filament\Support\Assets\Asset;
 use Filament\Support\Assets\Css;
-use Filament\Support\Assets\Js;
 use Filament\Support\Facades\FilamentAsset;
 use Filament\Support\Facades\FilamentIcon;
-use Filament\Support\Facades\FilamentView;
-use Filament\View\PanelsRenderHook;
 use Illuminate\Filesystem\Filesystem;
 use Livewire\Features\SupportTesting\Testable;
 use Spatie\LaravelPackageTools\Commands\InstallCommand;
@@ -87,18 +84,6 @@ class FilamentPrivacyBlurServiceProvider extends PackageServiceProvider
                 ], 'filament-privacy-blur-stubs');
             }
         }
-
-        // Register Global Reveal Toggle into Filament Panels
-        FilamentView::registerRenderHook(
-            PanelsRenderHook::GLOBAL_SEARCH_AFTER,
-            fn (): string => view('filament-privacy-blur::toggle-button')->render()
-        );
-
-        // Register Alpine.js component script
-        FilamentView::registerRenderHook(
-            PanelsRenderHook::FOOTER,
-            fn (): string => view('filament-privacy-blur::alpine-script')->render()
-        );
 
         ColumnPrivacyMacros::boot();
 

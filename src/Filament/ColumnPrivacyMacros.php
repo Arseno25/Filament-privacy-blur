@@ -8,6 +8,7 @@ use Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyConfigResolver;
 use Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver;
 use Arseno25\FilamentPrivacyBlur\Services\PrivacyAuthorizationService;
 use Arseno25\FilamentPrivacyBlur\Services\PrivacyMaskingService;
+use Closure;
 use Filament\Forms\Components\Field;
 use Filament\Infolists\Components\Entry;
 use Filament\Tables\Columns\Column;
@@ -173,9 +174,15 @@ class ColumnPrivacyMacros
 
                         // Handle masking first
                         if ($decision['should_mask']) {
-                            $strategy = PrivacyConfigResolver::resolveMaskStrategy($meta['mask_strategy'] ?? null);
+                            $maskStrategy = $meta['mask_strategy'] ?? null;
 
-                            return app(PrivacyMaskingService::class)->mask($strategy, (string) $state);
+                            if ($maskStrategy instanceof Closure) {
+                                return app()->call($maskStrategy, ['state' => (string) $state, 'record' => $record]);
+                            }
+
+                            $strategyStr = PrivacyConfigResolver::resolveMaskStrategy($maskStrategy);
+
+                            return app(PrivacyMaskingService::class)->mask($strategyStr, (string) $state);
                         }
 
                         // Export Fallback Logic - if it's an export action, fallback to masking for privacy
@@ -191,16 +198,16 @@ class ColumnPrivacyMacros
 
                             if ($decision['reveal_enabled']) {
                                 if ($mode === PrivacyMode::BlurClick) {
-                                    // Click to reveal
+                                    // Click to reveal — data attributes are on the outer wrapper via extraAttributes
                                     return new HtmlString(
-                                        "<span class=\"{$blurClass} fi-text-transparent fi-cursor-pointer transition-all duration-300 select-none\" data-privacy-blur=\"true\" data-privacy-click=\"true\">" .
+                                        "<span class=\"{$blurClass} fi-text-transparent fi-cursor-pointer transition-all duration-300 select-none\">" .
                                         e((string) $state) .
                                         '</span>'
                                     );
                                 } elseif ($mode === PrivacyMode::BlurHover) {
                                     // Hover to reveal
                                     return new HtmlString(
-                                        "<span class=\"{$blurClass} fi-hover fi-text-transparent transition-all duration-300 select-none\" data-privacy-blur=\"true\" data-privacy-hover=\"true\">" .
+                                        "<span class=\"{$blurClass} fi-hover fi-text-transparent transition-all duration-300 select-none\">" .
                                         e((string) $state) .
                                         '</span>'
                                     );
@@ -209,7 +216,7 @@ class ColumnPrivacyMacros
 
                             // No reveal - always blurred
                             return new HtmlString(
-                                "<span class=\"{$blurClass} fi-text-transparent transition-all duration-300 select-none\" data-privacy-blur=\"true\">" .
+                                "<span class=\"{$blurClass} fi-text-transparent transition-all duration-300 select-none\">" .
                                 e((string) $state) .
                                 '</span>'
                             );
@@ -232,7 +239,7 @@ class ColumnPrivacyMacros
                 return PrivacyMetadataHelper::set($this, ['privacy_mode' => $mode]);
             },
 
-            'maskUsing' => function (string $strategy) {
+            'maskUsing' => function (Closure | string $strategy) {
                 /** @var Column|Entry|Field $this */
                 return PrivacyMetadataHelper::set($this, ['mask_strategy' => $strategy]);
             },
@@ -262,12 +269,12 @@ class ColumnPrivacyMacros
                 return PrivacyMetadataHelper::set($this, ['privacy_permissions' => [$permission]]);
             },
 
-            'authorizeUsing' => function (\Closure $closure) {
+            'authorizeUsing' => function (Closure $closure) {
                 /** @var Column|Entry|Field $this */
                 return PrivacyMetadataHelper::set($this, ['privacy_auth_closure' => $closure]);
             },
 
-            'authorizeRevealUsing' => function (\Closure $closure) {
+            'authorizeRevealUsing' => function (Closure $closure) {
                 /** @var Column|Entry|Field $this */
                 return PrivacyMetadataHelper::set($this, ['privacy_auth_closure' => $closure]);
             },
