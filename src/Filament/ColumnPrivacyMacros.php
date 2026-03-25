@@ -9,6 +9,7 @@ use Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver;
 use Arseno25\FilamentPrivacyBlur\Services\PrivacyAuthorizationService;
 use Arseno25\FilamentPrivacyBlur\Services\PrivacyMaskingService;
 use Closure;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\Field;
 use Filament\Infolists\Components\Entry;
 use Filament\Tables\Columns\Column;
@@ -35,6 +36,9 @@ class ColumnPrivacyMacros
                         /** @var Field $this */
                         $meta = PrivacyMetadataHelper::get($this);
 
+                        // Attempt to resolve record from form context
+                        $record = method_exists($this, 'getRecord') ? $this->getRecord() : null;
+
                         $decision = PrivacyDecisionResolver::resolveForColumn(
                             $this->getName(),
                             $meta['privacy_mode'] ?? null,
@@ -43,7 +47,7 @@ class ColumnPrivacyMacros
                                 permissions: $meta['privacy_permissions'] ?? null,
                                 policy: $meta['privacy_policy'] ?? null,
                                 customAuth: $meta['privacy_auth_closure'] ?? null,
-                                record: null
+                                record: $record
                             ),
                             $meta['privacy_blur_amount'] ?? null,
                             null,
@@ -126,9 +130,15 @@ class ColumnPrivacyMacros
                                 if ($meta['privacy_audit_reveal'] ?? false) {
                                     $attributes['data-privacy-audit'] = 'true';
                                     $attributes['data-privacy-column'] = $columnName;
+                                    $attributes['data-privacy-mode'] = $mode->value;
                                     $recordId = $record ? $record->getKey() : '';
                                     if ($recordId) {
                                         $attributes['data-privacy-record-id'] = $recordId;
+                                    }
+                                    // Add panel context for audit
+                                    $panel = Filament::getCurrentPanel();
+                                    if ($panel) {
+                                        $attributes['data-privacy-panel'] = $panel->getId();
                                     }
                                 }
                             } elseif ($mode === PrivacyMode::BlurHover) {
@@ -180,14 +190,26 @@ class ColumnPrivacyMacros
                                 return app()->call($maskStrategy, ['state' => (string) $state, 'record' => $record]);
                             }
 
-                            $strategyStr = PrivacyConfigResolver::resolveMaskStrategy($maskStrategy);
+                            $strategyStr = PrivacyConfigResolver::resolveMaskStrategy(
+                                is_string($maskStrategy) ? $maskStrategy : null
+                            );
 
                             return app(PrivacyMaskingService::class)->mask($strategyStr, (string) $state);
                         }
 
-                        // Export Fallback Logic - if it's an export action, fallback to masking for privacy
-                        if ($decision['should_blur'] && request()->routeIs('*.export*')) {
-                            return '********'; // Fallback mask when attempting to export blurred data
+                        // Export context — apply masking instead of blur since blur is visual-only
+                        if ($decision['should_blur'] && ColumnPrivacyMacros::isExportContext()) {
+                            $maskStrategy = $meta['mask_strategy'] ?? null;
+
+                            if ($maskStrategy instanceof Closure) {
+                                return app()->call($maskStrategy, ['state' => (string) $state, 'record' => $record]);
+                            }
+
+                            $strategyStr = PrivacyConfigResolver::resolveMaskStrategy(
+                                is_string($maskStrategy) ? $maskStrategy : null
+                            );
+
+                            return app(PrivacyMaskingService::class)->mask($strategyStr, (string) $state);
                         }
 
                         // Handle blur by wrapping in span with CSS classes
@@ -320,5 +342,27 @@ class ColumnPrivacyMacros
             Entry::macro($name, $closure);
             Field::macro($name, $closure);
         }
+    }
+
+    /**
+     * Detect if the current request is an export context.
+     * Uses multiple strategies for reliability instead of just routeIs('*.export*').
+     */
+    public static function isExportContext(): bool
+    {
+        $route = request()->route();
+        if ($route) {
+            $routeName = $route->getName() ?? '';
+            if (str_contains($routeName, 'export')) {
+                return true;
+            }
+        }
+
+        // Check for Filament export header
+        if (request()->hasHeader('X-Filament-Export')) {
+            return true;
+        }
+
+        return false;
     }
 }

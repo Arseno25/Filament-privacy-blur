@@ -16,10 +16,16 @@
 .fi-pb-8 { filter: blur(4.5px); }
 .fi-pb-10 { filter: blur(6px); }
 
-/* Text transparent - softly hides content while blur effect works */
+/* Text transparent - softly hides content while blur effect works (Adaptive Theme) */
 .fi-text-transparent {
-    color: transparent;
-    text-shadow: 0 0 6px rgba(0, 0, 0, 0.25);
+    /* Muted dark text for light mode */
+    color: rgba(15, 23, 42, 0.4) !important; 
+}
+
+html.dark .fi-text-transparent,
+.dark .fi-text-transparent {
+    /* Muted light text for dark mode */
+    color: rgba(255, 255, 255, 0.7) !important;
 }
 
 /* Hover support - reveal on hover */

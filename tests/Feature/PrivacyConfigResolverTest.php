@@ -25,3 +25,34 @@ it('checks if column is excepted', function () {
     expect(PrivacyConfigResolver::isColumnExcepted('id'))->toBeTrue();
     expect(PrivacyConfigResolver::isColumnExcepted('name'))->toBeFalse();
 });
+
+it('checks if resource is excepted', function () {
+    Config::set('filament-privacy-blur.except_resources', ['App\\Filament\\Resources\\PublicResource']);
+
+    expect(PrivacyConfigResolver::isResourceExcepted('App\\Filament\\Resources\\PublicResource'))->toBeTrue();
+    expect(PrivacyConfigResolver::isResourceExcepted('App\\Filament\\Resources\\PrivateResource'))->toBeFalse();
+});
+
+it('resolves audit enabled from config', function () {
+    Config::set('filament-privacy-blur.audit_enabled', true);
+
+    expect(PrivacyConfigResolver::isAuditEnabled())->toBeTrue();
+});
+
+it('resolves audit disabled from config', function () {
+    Config::set('filament-privacy-blur.audit_enabled', false);
+
+    expect(PrivacyConfigResolver::isAuditEnabled())->toBeFalse();
+});
+
+it('resolves default mask strategy', function () {
+    Config::set('filament-privacy-blur.default_mask_strategy', 'email');
+
+    expect(PrivacyConfigResolver::resolveMaskStrategy())->toBe('email');
+});
+
+it('uses column override for mask strategy', function () {
+    Config::set('filament-privacy-blur.default_mask_strategy', 'generic');
+
+    expect(PrivacyConfigResolver::resolveMaskStrategy('phone'))->toBe('phone');
+});

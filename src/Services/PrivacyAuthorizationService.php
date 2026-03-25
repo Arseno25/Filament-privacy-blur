@@ -82,12 +82,14 @@ class PrivacyAuthorizationService
             return $user->can($policy);
         }
 
-        // If no strict rules defined and no exceptions raised,
-        // fallback to whether the user is generally allowed or not.
-        // We will default to FALSE if the developer specifically injected an auth check
-        // but it didn't match. If none of the arrays are provided, it implies NO auth was passed,
-        // meaning we shouldn't grant authorization simply because none was requested.
-        // We only get here if they defined roles/permissions but they failed, OR if none were defined.
-        return false;
+        // If no auth constraints were defined at all, treat as "no restriction" — everyone
+        // who is authenticated is authorized to reveal. This means ->private() without
+        // any auth methods (visibleToRoles, permission, etc.) allows all users to reveal.
+        // If constraints WERE defined but didn't match, we already returned false above.
+        $hasAnyConstraint = ($roles !== null && count($roles) > 0)
+            || ($permissions !== null && count($permissions) > 0)
+            || $policy !== null;
+
+        return ! $hasAnyConstraint;
     }
 }

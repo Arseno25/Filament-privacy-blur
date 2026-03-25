@@ -3,6 +3,7 @@
 namespace Arseno25\FilamentPrivacyBlur\Services;
 
 use Arseno25\FilamentPrivacyBlur\Models\PrivacyRevealLog;
+use Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyConfigResolver;
 use Filament\Facades\Filament;
 
 class PrivacyAuditLogger
@@ -17,7 +18,7 @@ class PrivacyAuditLogger
         ?string $resource = null,
         ?string $page = null
     ): void {
-        if (! config('filament-privacy-blur.audit_enabled', false)) {
+        if (! PrivacyConfigResolver::isAuditEnabled()) {
             return;
         }
 

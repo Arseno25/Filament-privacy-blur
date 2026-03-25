@@ -31,8 +31,16 @@ export default function (Alpine) {
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
             const column = this.$el.dataset.privacyColumn;
             const recordId = this.$el.dataset.privacyRecordId || '';
+            const mode = this.$el.dataset.privacyMode || 'blur_click';
+            const resource = this.$el.dataset.privacyResource || '';
+            const panel = this.$el.dataset.privacyPanel || '';
 
-            fetch('/filament-privacy-blur/audit', {
+            // Use a relative URL resolved at runtime — the audit URL is rendered
+            // into the alpine-script.blade.php. This Alpine data component is a
+            // fallback/alternative approach; the inline script handles most cases.
+            const auditUrl = window.__privacyBlurAuditUrl || '/filament-privacy-blur/audit';
+
+            fetch(auditUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -41,7 +49,9 @@ export default function (Alpine) {
                 body: JSON.stringify({
                     column: column,
                     record_id: recordId,
-                    mode: 'blur_click'
+                    mode: mode,
+                    resource: resource,
+                    panel: panel,
                 })
             }).catch(() => {
                 // Silently fail if audit logging fails
