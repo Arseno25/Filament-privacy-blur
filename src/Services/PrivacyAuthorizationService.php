@@ -87,8 +87,7 @@ class PrivacyAuthorizationService
         // any auth methods (visibleToRoles, permission, etc.) allows all users to reveal.
         // If constraints WERE defined but didn't match, we already returned false above.
         $hasAnyConstraint = ($roles !== null && count($roles) > 0)
-            || ($permissions !== null && count($permissions) > 0)
-            || $policy !== null;
+            || ($permissions !== null && count($permissions) > 0);
 
         return ! $hasAnyConstraint;
     }

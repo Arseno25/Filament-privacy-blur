@@ -37,7 +37,7 @@ class ColumnPrivacyMacros
                         $meta = PrivacyMetadataHelper::get($this);
 
                         // Attempt to resolve record from form context
-                        $record = method_exists($this, 'getRecord') ? $this->getRecord() : null;
+                        $record = $this->getRecord();
 
                         $decision = PrivacyDecisionResolver::resolveForColumn(
                             $this->getName(),
