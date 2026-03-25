@@ -12,19 +12,40 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
-        php: [8.4, 8.2]
-        laravel: [12.*, 11.*]
-        filament: [5.*, 4.*]
         include:
-          - laravel: 12.*
-            testbench: 10.*
-            carbon: 3.*
-            collision: 8.*
-          - laravel: 11.*
+          # PHP 8.2 - Filament 4.x only (v5 requires PHP 8.3+)
+          - os: ubuntu-latest
+            php: '8.2'
+            laravel: 11.*
             testbench: 9.*
-            carbon: 3.*
-            collision: 8.*
+            filament: 4.*
+          - os: ubuntu-latest
+            php: '8.2'
+            laravel: 12.*
+            testbench: 10.*
+            filament: 4.*
+
+          # PHP 8.3+ - Both Filament 4.x and 5.x
+          - os: ubuntu-latest
+            php: '8.4'
+            laravel: 11.*
+            testbench: 9.*
+            filament: 4.*
+          - os: ubuntu-latest
+            php: '8.4'
+            laravel: 11.*
+            testbench: 9.*
+            filament: 5.*
+          - os: ubuntu-latest
+            php: '8.4'
+            laravel: 12.*
+            testbench: 10.*
+            filament: 4.*
+          - os: ubuntu-latest
+            php: '8.4'
+            laravel: 12.*
+            testbench: 10.*
+            filament: 5.*
 
     name: P${{ matrix.php }} - L${{ matrix.laravel }} - F${{ matrix.filament }} - ${{ matrix.os }}
 
@@ -46,7 +67,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" "nesbot/carbon:${{ matrix.carbon }}" "filament/filament:${{ matrix.filament }}" --no-interaction --no-update
+          composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" "filament/filament:${{ matrix.filament }}" --no-interaction --no-update
           composer update --prefer-dist --no-interaction
 
       - name: List Installed Dependencies

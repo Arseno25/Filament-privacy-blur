@@ -20,7 +20,7 @@ A Filament v3 plugin that provides visual privacy protection for sensitive data.
 
 ## Requirements
 
-- PHP 8.2 or higher
+- PHP 8.2 or higher (8.3+ required for Filament v5.x)
 - Laravel 11 or higher
 - Filament v4.x or v5.x
 - Alpine.js (bundled with Filament)
@@ -249,7 +249,7 @@ When enabled, reveal actions are logged to the `privacy_reveal_logs` table with:
 
 ## Compatibility
 
-- **PHP**: 8.2, 8.3, and 8.4
+- **PHP**: 8.2, 8.3, and 8.4 (Filament v5.x requires 8.3+)
 - **Laravel**: 11 and 12
 - **Filament**: v4.x and v5.x
 
