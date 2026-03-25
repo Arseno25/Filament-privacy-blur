@@ -1,5 +1,7 @@
 # Filament Privacy Blur
 
+![Filament Privacy Blur Banner](img/banner.png)
+
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/arseno25/filament-privacy-blur.svg?style=flat-square)](https://packagist.org/packages/arseno25/filament-privacy-blur)
 [![Total Downloads](https://img.shields.io/packagist/dt/arseno25/filament-privacy-blur.svg?style=flat-square)](https://packagist.org/packages/arseno25/filament-privacy-blur)
 
@@ -7,10 +9,15 @@ A Filament plugin that adds visual privacy layers to sensitive data in tables, i
 
 ## Features
 
+![Table Preview](img/table.png)
+
 - 🔒 **Visual Blur Protection** — CSS-based blur prevents casual observation during screen shares or in busy environments
 - 🖱 **Click to Reveal** — Click a blurred field to temporarily reveal it (auto re-blurs after 5 seconds)
 - 👆 **Hover to Reveal** — Quick-peek by hovering your mouse over the field
 - 👁 **Global Reveal Toggle** — An eye icon in the topbar lets authorized users reveal all blurred fields instantly
+  
+  ![Toggle Hidden](img/hide-toogle.png) ![Toggle Revealed](img/reveal-toogle.png)
+  
 - 🎭 **Data Masking** — Built-in mask strategies for `email`, `phone`, `nik`, `full_name`, `api_key`, `address`, and `generic`
 - 📝 **Form Input Protection** — Apply blur to `TextInput`, `Textarea`, and other form fields (auto-clears on focus)
 - 🛡 **Role & Permission Gates** — Control who can reveal data using Spatie roles, permissions, Laravel policies, or custom closures
@@ -86,6 +93,12 @@ TextColumn::make('phone')
     ->privacyMode('mask')
     ->maskUsing('phone'),
 
+// Custom Dynamic Masking via Closure
+TextColumn::make('account_number')
+    ->private()
+    ->privacyMode('mask')
+    ->maskUsing(fn (string $state) => substr($state, 0, 4) . ' **** ****'),
+
 // Hover to reveal
 TextColumn::make('address')
     ->private()
@@ -101,6 +114,8 @@ TextColumn::make('salary')
 ```
 
 ### Form Inputs
+
+![Form Input Preview](img/text-input.png)
 
 ```php
 use Filament\Forms\Components\TextInput;
@@ -169,6 +184,7 @@ TextColumn::make('customer_notes')
 | `api_key` | `sk_***_key` |
 | `address` | `Jl. Sudirma***` |
 | `generic` | `J***h` |
+| `Closure` | `(Custom Data)` |
 
 ## Available Methods
 
@@ -186,7 +202,8 @@ TextColumn::make('customer_notes')
 ->blurAmount(6)                     // CSS blur intensity (1–10)
 
 // Masking
-->maskUsing('email')                // Mask strategy: email, phone, nik, full_name, api_key, address, generic
+->maskUsing('email')                // Mask strategy: email, phone, nik, full_name, api_key, address, generic, or Closure
+
 
 // Authorization
 ->visibleToRoles(['admin'])         // Spatie roles that bypass blur

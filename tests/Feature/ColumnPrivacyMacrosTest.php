@@ -41,3 +41,31 @@ it('tests export masking fallback when route is export', function () {
 
     expect($formatted)->toBe('********');
 });
+
+it('applies simple string mask for generic strategy', function () {
+    $panel = Panel::make('test')->id('test')->plugin(FilamentPrivacyBlurPlugin::make());
+    Filament::setCurrentPanel($panel);
+
+    $column = TextColumn::make('phone')
+        ->private()
+        ->privacyMode('mask')
+        ->maskUsing('phone');
+
+    $formatted = $column->formatState('081234567890');
+
+    expect($formatted)->toBe('0812****7890');
+});
+
+it('applies custom closure for dynamic masking', function () {
+    $panel = Panel::make('test')->id('test')->plugin(FilamentPrivacyBlurPlugin::make());
+    Filament::setCurrentPanel($panel);
+
+    $column = TextColumn::make('account_number')
+        ->private()
+        ->privacyMode('mask')
+        ->maskUsing(fn (string $state) => substr($state, 0, 4) . ' **** ****');
+
+    $formatted = $column->formatState('123456789012');
+
+    expect($formatted)->toBe('1234 **** ****');
+});

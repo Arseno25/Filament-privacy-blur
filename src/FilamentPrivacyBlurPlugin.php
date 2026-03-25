@@ -36,13 +36,19 @@ class FilamentPrivacyBlurPlugin implements Plugin
         // Register Global Reveal Toggle into topbar
         FilamentView::registerRenderHook(
             PanelsRenderHook::GLOBAL_SEARCH_AFTER,
-            fn (): string => view('filament-privacy-blur::toggle-button')->render()
+            function (): string {
+                /** @phpstan-ignore-next-line */
+                return view('filament-privacy-blur::toggle-button')->render();
+            }
         );
 
         // Register Alpine.js interaction script in footer
         FilamentView::registerRenderHook(
             PanelsRenderHook::BODY_END,
-            fn (): string => view('filament-privacy-blur::alpine-script')->render()
+            function (): string {
+                /** @phpstan-ignore-next-line */
+                return view('filament-privacy-blur::alpine-script')->render();
+            }
         );
     }
 
