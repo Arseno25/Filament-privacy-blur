@@ -1,95 +1,250 @@
-# :package_description
+# Filament Privacy Blur Plugin
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/:vendor_slug/:package_slug.svg?style=flat-square)](https://packagist.org/packages/:vendor_slug/:package_slug)
-[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/:vendor_slug/:package_slug/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/:vendor_slug/:package_slug/actions?query=workflow%3Arun-tests+branch%3Amain)
-[![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/:vendor_slug/:package_slug/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/:vendor_slug/:package_slug/actions?query=workflow%3A"Fix+PHP+code+styling"+branch%3Amain)
-[![Total Downloads](https://img.shields.io/packagist/dt/:vendor_slug/:package_slug.svg?style=flat-square)](https://packagist.org/packages/:vendor_slug/:package_slug)
+A Filament plugin providing visual privacy layers on sensitive column data (e.g. NIK, addresses, emails, phone numbers). Easily configure default behavior (blur / mask), set specific constraints based on roles or permissions, and allow reveal interactions (click or hover).
 
-<!--delete-->
----
-This repo can be used to scaffold a Filament plugin. Follow these steps to get started:
+## Features
 
-1. Press the "Use this template" button at the top of this repo to create a new repo with the contents of this skeleton.
-2. Run "php ./configure.php" to run a script that will replace all placeholders throughout all the files.
-3. Make something great!
----
-<!--/delete-->
+| Feature | Description |
+|---------|-------------|
+| **Blur Visual Filter** | Protects data from being completely readable on screen during screen shares or in busy environments. |
+| **Form Inputs Protection** | Apply `->private()` to `TextInput` and other forms so they stay blurred until focused. |
+| **Click to Reveal (Auto Re-blur)** | Click on the field to temporarily disable the blur. The text will automatically re-blur after 5 seconds to prevent accidental exposure. |
+| **Hover to Reveal** | Provide quick access by simply hovering the mouse. |
+| **Global "Reveal All" Toggle** | A handy eye-icon in the Filament topbar allows authorized users to reveal all blurred fields on the page instantly. |
+| **Screen Reader Security** | Blurred text uses `aria-hidden` and `select-none` to prevent screen readers and accidental copy-pasting from leaking data. |
+| **Masking Engine & Export Fallback** | Mask formats natively for `email`, `phone`, `nik`, etc. Automatically masks blurred column data during Filament Exports to maintain safety. |
+| **Gate/Role Authorization** | Only allow certain roles/permissions to reveal data. |
+| **Audit Logging** | Logs which user clicked to reveal a specific protected record to the database via frontend AJAX requests. |
+| **Role Exclusion** | Force blur on specific roles regardless of other permissions. |
+| **Custom Blur Amount** | Adjust blur intensity per field. |
 
-This is where your description should go. Limit it to a paragraph or two. Consider adding a small example.
+## Requirements
+
+- PHP 8.2+
+- Filament v3.0+
+- Alpine JS (included in Filament)
+- Tailwind CSS
 
 ## Installation
 
 You can install the package via composer:
 
 ```bash
-composer require :vendor_slug/:package_slug
+composer require arseno25/filament-privacy-blur
 ```
 
-> [!IMPORTANT]
-> If you have not set up a custom theme and are using Filament Panels follow the instructions in the [Filament Docs](https://filamentphp.com/docs/4.x/styling/overview#creating-a-custom-theme) first.
-
-After setting up a custom theme add the plugin's views to your theme css file or your app's css file if using the standalone packages.
-
-```css
-@source '../../../../vendor/:vendor_slug/:package_slug/resources/**/*.blade.php';
-```
-
-You can publish and run the migrations with:
+### Publish Config & Migrations
 
 ```bash
-php artisan vendor:publish --tag=":package_slug-migrations"
+# Publish configuration file
+php artisan vendor:publish --tag="filament-privacy-blur-config"
+
+# Publish migration for audit logging
+php artisan vendor:publish --tag="filament-privacy-blur-migrations"
+
+# Run migrations
 php artisan migrate
 ```
 
-You can publish the config file with:
+## Configuration
 
-```bash
-php artisan vendor:publish --tag=":package_slug-config"
-```
-
-Optionally, you can publish the views using
-
-```bash
-php artisan vendor:publish --tag=":package_slug-views"
-```
-
-This is the contents of the published config file:
+You can globally modify the default settings from `config/filament-privacy-blur.php`:
 
 ```php
 return [
+    'default_mode' => 'blur_click',     // blur, mask, blur_hover, blur_click, blur_auth, hybrid
+    'default_blur_amount' => 4,
+    'default_mask_strategy' => 'generic',
+    'except_columns' => ['id', 'created_at', 'updated_at'],
+    'except_resources' => [],
+    'except_panels' => [],
+    'audit_enabled' => false,
+    'icon_trigger_enabled' => true,
 ];
 ```
 
 ## Usage
 
+### 1. Panel Registration
+
+Add the plugin to your panel configuration:
+
 ```php
-$variable = new VendorName\Skeleton();
-echo $variable->echoPhrase('Hello, VendorName!');
+use Arseno25\FilamentPrivacyBlur\FilamentPrivacyBlurPlugin;
+
+public function panel(Panel $panel): Panel
+{
+    return $panel
+        ->plugin(
+            FilamentPrivacyBlurPlugin::make()
+                ->defaultMode('blur_click')
+                ->blurAmount(5)
+                ->exceptColumns(['id', 'created_at'])
+                ->enableAudit(true)
+        );
+}
 ```
 
-## Testing
+### 2. Apply to Columns
 
-```bash
-composer test
+The plugin injects macros into the core Filament Column, Entry, and Field classes, extending `TextColumn`, `TextInput`, `BadgeColumn`, etc.
+
+```php
+use Filament\Tables\Columns\TextColumn;
+use Filament\Forms\Components\TextInput;
+
+// Form Input Example (Blurs unless focused)
+TextInput::make('salary')
+    ->private();
+
+// Table Column - Use default mode
+TextColumn::make('email')
+    ->private();
+
+// Table Column - Hover to reveal
+TextColumn::make('phone')
+    ->private()
+    ->revealOnHover();
+
+// Table Column - Mask the data
+TextColumn::make('nik')
+    ->private()
+    ->privacyMode('mask')
+    ->maskUsing('nik'); // 3173********9012
+
+// Table Column - Role-based visibility
+TextColumn::make('salary')
+    ->private()
+    ->visibleToRoles(['admin', 'hr']); // Regular users see blur, these roles see full plaintext
 ```
+
+### 3. Privacy Modes
+
+| Mode | Description |
+|------|-------------|
+| `blur` | Always blurred, no way to reveal |
+| `mask` | Data is masked at render time (not in DOM) |
+| `blur_hover` | Blurred, reveals on hover |
+| `blur_click` | Blurred, reveals on click (auto re-blur after 5s) |
+| `blur_auth` | Blurred, only authorized users can reveal |
+| `hybrid` | Both blur + mask (extra security) |
+| `disabled` | Privacy disabled for this field |
+
+### 4. Available Methods
+
+```php
+->private()                        // Enables privacy logic for the column using defaults
+->privacyMode('mask')              // Overrides the mode (see modes above)
+
+// Convenience aliases
+->revealOnHover()                  // Alias for ->privacyMode('blur_hover')
+->revealOnClick()                  // Alias for ->privacyMode('blur_click')
+->revealNever()                    // Alias for ->privacyMode('blur')
+
+// Appearance
+->blurAmount(6)                    // Set custom CSS blur strength (1-10)
+
+// Masking
+->maskUsing('email')               // Sets masking strategy (email, phone, nik, full_name, api_key, address, generic)
+
+// Authorization (show unblurred to...)
+->visibleToRoles(['admin'])        // Spatie roles that can view unblurred
+->visibleToPermissions(['edit'])   // Spatie permissions that can view unblurred
+->permission('view_salary')        // Single permission string
+->policy('viewSensitive')          // Use standard Gate authorization check per record
+->authorizeUsing(fn () => ...)     // Custom closure to determine if user can bypass blur
+
+// Force blur for...
+->hiddenFromRoles(['customer'])    // These roles ALWAYS see blur, regardless of other permissions
+
+// Audit logging
+->auditReveal(true)                // Log reveal actions to database
+->withoutAuditReveal()             // Disable audit for this field
+```
+
+### 5. Mask Strategies
+
+| Strategy | Example Output |
+|----------|---------------|
+| `email` | `j***e@example.com` |
+| `phone` | `0812****7890` |
+| `nik` | `3173********9012` |
+| `full_name` | `Jo** Do*` |
+| `api_key` | `sk_***_key` |
+| `address` | `Jl. Sudirman ***` |
+| `generic` | `J***h` |
+
+### 6. Authorization Examples
+
+```php
+use Filament\Tables\Columns\TextColumn;
+
+// Role-based (Spatie Laravel Permission)
+TextColumn::make('ssn')
+    ->private()
+    ->visibleToRoles(['admin', 'hr-manager']);
+
+// Permission-based
+TextColumn::make('salary')
+    ->private()
+    ->permission('view_salary');
+
+// Policy-based (Laravel Gates)
+TextColumn::make('notes')
+    ->private()
+    ->policy('view_sensitive_notes');
+
+// Custom closure
+TextColumn::make('internal_code')
+    ->private()
+    ->authorizeUsing(fn ($user) => $user?->is_admin === true);
+
+// Force blur for specific roles
+TextColumn::make('customer_notes')
+    ->private()
+    ->hiddenFromRoles(['customer', 'guest']);
+```
+
+### 7. Audit Logging
+
+When audit is enabled, all reveal actions are logged:
+
+```php
+// Enable audit in panel config
+FilamentPrivacyBlurPlugin::make()
+    ->enableAudit(true);
+
+// Enable per-field
+TextColumn::make('ssn')
+    ->private()
+    ->revealOnClick()
+    ->auditReveal(true);
+```
+
+Audit logs include:
+- User ID
+- Column name
+- Record key
+- Reveal mode used
+- IP address
+- User agent
+- Timestamp
+
+## Security Disclaimers
+
+⚠️ **Important Security Notice:**
+
+This plugin offers a **visual privacy layer** intended to shield sensitive data from casual observers (over-the-shoulder surfing or screen sharing).
+
+- Data is **still technically present in the DOM** when using blur modes (unless you use `mask` or `hybrid` modes)
+- Do not mistake visual CSS blurring for cryptographic security
+- For high security requirements, perform data redaction directly in the model layer or API responses
+- Always combine with proper backend authorization and data encryption
 
 ## Changelog
 
-Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
-
-## Contributing
-
-Please see [CONTRIBUTING](.github/CONTRIBUTING.md) for details.
-
-## Security Vulnerabilities
-
-Please review [our security policy](.github/SECURITY.md) on how to report security vulnerabilities.
-
-## Credits
-
-- [:author_name](https://github.com/:author_username)
-- [All Contributors](../../contributors)
+Please see CHANGELOG for more information on what has changed recently.
 
 ## License
 
-The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
+The MIT License (MIT). Please see License File for more information.

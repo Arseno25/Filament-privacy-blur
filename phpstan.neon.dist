@@ -13,3 +13,8 @@ parameters:
     checkOctaneCompatibility: true
     checkModelProperties: true
 
+    ignoreErrors:
+        -
+            message: '#(Undefined variable: \$this|Variable \$this in PHPDoc tag \@var does not exist)#'
+            path: src/Filament/ColumnPrivacyMacros.php
+

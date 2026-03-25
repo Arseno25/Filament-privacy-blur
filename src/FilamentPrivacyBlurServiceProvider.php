@@ -1,26 +1,28 @@
 <?php
 
-namespace VendorName\Skeleton;
+namespace Arseno25\FilamentPrivacyBlur;
 
-use Filament\Support\Assets\AlpineComponent;
+use Arseno25\FilamentPrivacyBlur\Commands\FilamentPrivacyBlurCommand;
+use Arseno25\FilamentPrivacyBlur\Filament\ColumnPrivacyMacros;
+use Arseno25\FilamentPrivacyBlur\Testing\TestsFilamentPrivacyBlur;
 use Filament\Support\Assets\Asset;
 use Filament\Support\Assets\Css;
 use Filament\Support\Assets\Js;
 use Filament\Support\Facades\FilamentAsset;
 use Filament\Support\Facades\FilamentIcon;
+use Filament\Support\Facades\FilamentView;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Filesystem\Filesystem;
 use Livewire\Features\SupportTesting\Testable;
 use Spatie\LaravelPackageTools\Commands\InstallCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-use VendorName\Skeleton\Commands\SkeletonCommand;
-use VendorName\Skeleton\Testing\TestsSkeleton;
 
-class SkeletonServiceProvider extends PackageServiceProvider
+class FilamentPrivacyBlurServiceProvider extends PackageServiceProvider
 {
-    public static string $name = 'skeleton';
+    public static string $name = 'filament-privacy-blur';
 
-    public static string $viewNamespace = 'skeleton';
+    public static string $viewNamespace = 'filament-privacy-blur';
 
     public function configurePackage(Package $package): void
     {
@@ -31,12 +33,13 @@ class SkeletonServiceProvider extends PackageServiceProvider
          */
         $package->name(static::$name)
             ->hasCommands($this->getCommands())
+            ->hasRoute('web') // Register routes/web.php
             ->hasInstallCommand(function (InstallCommand $command) {
                 $command
                     ->publishConfigFile()
                     ->publishMigrations()
                     ->askToRunMigrations()
-                    ->askToStarRepoOnGitHub(':vendor_slug/:package_slug');
+                    ->askToStarRepoOnGitHub('arseno25/filament-privacy-blur');
             });
 
         $configFileName = $package->shortName();
@@ -80,18 +83,32 @@ class SkeletonServiceProvider extends PackageServiceProvider
         if (app()->runningInConsole()) {
             foreach (app(Filesystem::class)->files(__DIR__ . '/../stubs/') as $file) {
                 $this->publishes([
-                    $file->getRealPath() => base_path("stubs/skeleton/{$file->getFilename()}"),
-                ], 'skeleton-stubs');
+                    $file->getRealPath() => base_path("stubs/filament-privacy-blur/{$file->getFilename()}"),
+                ], 'filament-privacy-blur-stubs');
             }
         }
 
+        // Register Global Reveal Toggle into Filament Panels
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::GLOBAL_SEARCH_AFTER,
+            fn (): string => view('filament-privacy-blur::toggle-button')->render()
+        );
+
+        // Register Alpine.js component script
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::FOOTER,
+            fn (): string => view('filament-privacy-blur::alpine-script')->render()
+        );
+
+        ColumnPrivacyMacros::boot();
+
         // Testing
-        Testable::mixin(new TestsSkeleton);
+        Testable::mixin(new TestsFilamentPrivacyBlur);
     }
 
     protected function getAssetPackageName(): ?string
     {
-        return ':vendor_slug/:package_slug';
+        return 'arseno25/filament-privacy-blur';
     }
 
     /**
@@ -100,9 +117,7 @@ class SkeletonServiceProvider extends PackageServiceProvider
     protected function getAssets(): array
     {
         return [
-            // AlpineComponent::make('skeleton', __DIR__ . '/../resources/dist/components/skeleton.js'),
-            // Css::make('skeleton-styles', __DIR__ . '/../resources/dist/skeleton.css'),
-            // Js::make('skeleton-scripts', __DIR__ . '/../resources/dist/skeleton.js'),
+            Css::make('filament-privacy-blur-styles', __DIR__ . '/../resources/css/filament-privacy-blur.css'),
         ];
     }
 
@@ -112,7 +127,7 @@ class SkeletonServiceProvider extends PackageServiceProvider
     protected function getCommands(): array
     {
         return [
-            SkeletonCommand::class,
+            FilamentPrivacyBlurCommand::class,
         ];
     }
 
@@ -146,7 +161,7 @@ class SkeletonServiceProvider extends PackageServiceProvider
     protected function getMigrations(): array
     {
         return [
-            'create_skeleton_table',
+            'create_privacy_reveal_logs_table',
         ];
     }
 }
