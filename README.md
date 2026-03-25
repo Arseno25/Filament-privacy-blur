@@ -1,34 +1,28 @@
 # Filament Privacy Blur
 
-![Filament Privacy Blur Banner](img/banner.png)
-
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/arseno25/filament-privacy-blur.svg?style=flat-square)](https://packagist.org/packages/arseno25/filament-privacy-blur)
 [![Total Downloads](https://img.shields.io/packagist/dt/arseno25/filament-privacy-blur.svg?style=flat-square)](https://packagist.org/packages/arseno25/filament-privacy-blur)
+[![License](https://img.shields.io/packagist/l/arseno25/filament-privacy-blur.svg?style=flat-square)](https://packagist.org/packages/arseno25/filament-privacy-blur)
 
-A Filament plugin that adds visual privacy layers to sensitive data in tables, infolists, and forms. Protect fields like emails, phone numbers, national IDs, and salaries from shoulder surfing and screen sharing with configurable blur and masking effects.
+A Filament v3 plugin that provides visual privacy protection for sensitive data. Apply blur and masking effects to table columns, form inputs, and infolist entries to prevent accidental exposure during screen sharing or shoulder surfing.
 
 ## Features
 
-![Table Preview](img/table.png)
-
-- 🔒 **Visual Blur Protection** — CSS-based blur prevents casual observation during screen shares or in busy environments
-- 🖱 **Click to Reveal** — Click a blurred field to temporarily reveal it (auto re-blurs after 5 seconds)
-- 👆 **Hover to Reveal** — Quick-peek by hovering your mouse over the field
-- 👁 **Global Reveal Toggle** — An eye icon in the topbar lets authorized users reveal all blurred fields instantly
-  
-  ![Toggle Hidden](img/hide-toogle.png) ![Toggle Revealed](img/reveal-toogle.png)
-  
-- 🎭 **Data Masking** — Built-in mask strategies for `email`, `phone`, `nik`, `full_name`, `api_key`, `address`, and `generic`
-- 📝 **Form Input Protection** — Apply blur to `TextInput`, `Textarea`, and other form fields (auto-clears on focus)
-- 🛡 **Role & Permission Gates** — Control who can reveal data using Spatie roles, permissions, Laravel policies, or custom closures
-- 🕵️ **Audit Logging** — Track which user revealed which field, with IP address and timestamp
-- 🚫 **Role Exclusion** — Force-blur specific roles regardless of other permissions
-- 📤 **Export Safety** — Automatically masks blurred data during Filament Exports
+- **Visual Blur Protection** — CSS-based blur prevents casual observation during screen shares
+- **Click to Reveal** — Click a blurred field to temporarily reveal it (auto re-blurs after 5 seconds)
+- **Hover to Reveal** — Quick-peek by hovering your mouse over the field
+- **Global Reveal Toggle** — An eye icon in the topbar lets authorized users reveal all blurred fields instantly
+- **Data Masking** — Built-in mask strategies for email, phone, NIK, full name, API key, address, and generic text
+- **Form Input Protection** — Apply blur to `TextInput`, `Textarea`, and other form fields (auto-clears on focus)
+- **Authorization Gates** — Control who can reveal data using Spatie roles, permissions, Laravel policies, or custom closures
+- **Audit Logging** — Track which user revealed which field, with IP address and timestamp
+- **Export Safety** — Automatically masks blurred data during Filament exports
 
 ## Requirements
 
-- PHP 8.2+
-- Filament v3.0+ / v4.0+ / v5.0+
+- PHP 8.2 or higher
+- Laravel 11 or higher
+- Filament v4.x or v5.x
 - Alpine.js (bundled with Filament)
 
 ## Installation
@@ -39,10 +33,15 @@ Install the package via Composer:
 composer require arseno25/filament-privacy-blur
 ```
 
-Publish the configuration and migration files:
+Publish the configuration file:
 
 ```bash
 php artisan vendor:publish --tag="filament-privacy-blur-config"
+```
+
+Publish and run the migration (for audit logging):
+
+```bash
 php artisan vendor:publish --tag="filament-privacy-blur-migrations"
 php artisan migrate
 ```
@@ -60,9 +59,9 @@ public function panel(Panel $panel): Panel
         ->plugin(
             FilamentPrivacyBlurPlugin::make()
                 ->defaultMode('blur_click')
-                ->blurAmount(3)
+                ->blurAmount(4)
                 ->exceptColumns(['id', 'created_at', 'updated_at'])
-                ->enableAudit(true)
+                ->enableAudit()
         );
 }
 ```
@@ -71,13 +70,11 @@ public function panel(Panel $panel): Panel
 
 ### Table Columns
 
-Add `->private()` to any column to enable privacy protection:
-
 ```php
 use Filament\Tables\Columns\TextColumn;
 
-// Click to reveal (default mode)
-TextColumn::make('name')
+// Click to reveal (default)
+TextColumn::make('email')
     ->private()
     ->revealOnClick(),
 
@@ -93,7 +90,7 @@ TextColumn::make('phone')
     ->privacyMode('mask')
     ->maskUsing('phone'),
 
-// Custom Dynamic Masking via Closure
+// Custom masking via Closure
 TextColumn::make('account_number')
     ->private()
     ->privacyMode('mask')
@@ -104,25 +101,20 @@ TextColumn::make('address')
     ->private()
     ->revealOnHover(),
 
-// Custom blur intensity + audit logging
+// Custom blur intensity
 TextColumn::make('salary')
     ->money('IDR')
     ->private()
-    ->revealOnClick()
-    ->blurAmount(6)
-    ->auditReveal(true),
+    ->blurAmount(6),
 ```
 
 ### Form Inputs
-
-![Form Input Preview](img/text-input.png)
 
 ```php
 use Filament\Forms\Components\TextInput;
 
 // Blurred until the user focuses the input
-TextInput::make('email')
-    ->private(),
+TextInput::make('email')->private(),
 
 TextInput::make('salary')
     ->numeric()
@@ -166,7 +158,7 @@ TextColumn::make('customer_notes')
 | Mode | Behavior |
 |------|----------|
 | `blur` | Always blurred, cannot be revealed |
-| `mask` | Data is masked server-side (e.g. `j***e@example.com`) |
+| `mask` | Data is masked server-side (e.g., `j***e@example.com`) |
 | `blur_hover` | Blurred, reveals on hover |
 | `blur_click` | Blurred, reveals on click (auto re-blurs after 5s) |
 | `blur_auth` | Blurred, only authorized users can reveal |
@@ -184,7 +176,6 @@ TextColumn::make('customer_notes')
 | `api_key` | `sk_***_key` |
 | `address` | `Jl. Sudirma***` |
 | `generic` | `J***h` |
-| `Closure` | `(Custom Data)` |
 
 ## Available Methods
 
@@ -202,8 +193,7 @@ TextColumn::make('customer_notes')
 ->blurAmount(6)                     // CSS blur intensity (1–10)
 
 // Masking
-->maskUsing('email')                // Mask strategy: email, phone, nik, full_name, api_key, address, generic, or Closure
-
+->maskUsing('email')                // Mask strategy or Closure
 
 // Authorization
 ->visibleToRoles(['admin'])         // Spatie roles that bypass blur
@@ -211,8 +201,6 @@ TextColumn::make('customer_notes')
 ->permission('view_salary')         // Single permission check
 ->policy('viewSensitive')           // Laravel Gate authorization
 ->authorizeUsing(fn () => ...)      // Custom closure
-
-// Force blur
 ->hiddenFromRoles(['customer'])     // These roles always see blur
 
 // Audit
@@ -226,14 +214,14 @@ After publishing, edit `config/filament-privacy-blur.php`:
 
 ```php
 return [
-    'default_mode'          => 'blur_click',   // Default privacy mode
-    'default_blur_amount'   => 3,              // CSS blur in px
-    'default_mask_strategy' => 'generic',      // Fallback mask strategy
+    'default_mode'          => 'blur_click',
+    'default_blur_amount'   => 4,
+    'default_mask_strategy' => 'generic',
     'except_columns'        => ['id', 'created_at', 'updated_at'],
     'except_resources'      => [],
     'except_panels'         => [],
-    'audit_enabled'         => false,          // Global audit toggle
-    'icon_trigger_enabled'  => true,           // Show global reveal button
+    'audit_enabled'         => false,
+    'icon_trigger_enabled'  => true,
 ];
 ```
 
@@ -251,11 +239,19 @@ When enabled, reveal actions are logged to the `privacy_reveal_logs` table with:
 
 ## Security Notice
 
-> ⚠️ This plugin provides a **visual privacy layer** to shield sensitive data from casual observation (shoulder surfing, screen sharing). It is **not** a substitute for backend data encryption or access control.
+> **This plugin provides a visual privacy layer only.** It is designed to prevent casual observation (shoulder surfing, screen sharing) and is **not** a substitute for:
 >
-> - Blur modes keep the original data in the DOM — use `mask` or `hybrid` mode for sensitive fields
-> - Always combine with proper backend authorization and data encryption
-> - For high-security requirements, perform data redaction at the model or API layer
+> - Backend data encryption
+> - Proper access control
+> - API-level data redaction
+>
+> Blur modes keep the original data in the DOM. For highly sensitive fields, use `mask` or `hybrid` mode, or implement data redaction at the model/API layer.
+
+## Compatibility
+
+- **PHP**: 8.2, 8.3, and 8.4
+- **Laravel**: 11 and 12
+- **Filament**: v4.x and v5.x
 
 ## Changelog
 

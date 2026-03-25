@@ -1,12 +1,15 @@
 {
     "name": "arseno25/filament-privacy-blur",
-    "description": "This is my package filament-privacy-blur",
+    "description": "Visual privacy layer for Filament — blur and mask sensitive data in tables, forms, and infolists",
     "keywords": [
-        "Arseno25",
         "laravel",
-        "filamentphp",
         "filament",
         "filament-plugin",
+        "privacy",
+        "data-masking",
+        "blur",
+        "gdpr",
+        "sensitive-data",
         "filament-privacy-blur"
     ],
     "homepage": "https://github.com/arseno25/filament-privacy-blur",
@@ -18,13 +21,13 @@
     "authors": [
         {
             "name": "Arseno25",
-            "email": "utomnestagumara@gmail.com",
+            "homepage": "https://github.com/arseno25",
             "role": "Developer"
         }
     ],
     "require": {
         "php": "^8.2",
-        "filament/filament": "^3.0|^4.0|^5.0",
+        "filament/filament": "^4.0|^5.0",
         "spatie/laravel-package-tools": "^1.15.0"
     },
     "require-dev": {
@@ -41,8 +44,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Arseno25\\FilamentPrivacyBlur\\": "src/",
-            "Arseno25\\FilamentPrivacyBlur\\Database\\Factories\\": "database/factories/"
+            "Arseno25\\FilamentPrivacyBlur\\": "src/"
         }
     },
     "autoload-dev": {
@@ -63,10 +65,7 @@
         "laravel": {
             "providers": [
                 "Arseno25\\FilamentPrivacyBlur\\FilamentPrivacyBlurServiceProvider"
-            ],
-            "aliases": {
-                "FilamentPrivacyBlur": "Arseno25\\FilamentPrivacyBlur\\Facades\\FilamentPrivacyBlur"
-            }
+            ]
         }
     },
     "config": {

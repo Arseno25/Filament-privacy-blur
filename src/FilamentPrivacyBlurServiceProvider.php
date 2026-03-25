@@ -2,14 +2,12 @@
 
 namespace Arseno25\FilamentPrivacyBlur;
 
-use Arseno25\FilamentPrivacyBlur\Commands\FilamentPrivacyBlurCommand;
 use Arseno25\FilamentPrivacyBlur\Filament\ColumnPrivacyMacros;
 use Arseno25\FilamentPrivacyBlur\Testing\TestsFilamentPrivacyBlur;
 use Filament\Support\Assets\Asset;
 use Filament\Support\Assets\Css;
 use Filament\Support\Facades\FilamentAsset;
 use Filament\Support\Facades\FilamentIcon;
-use Illuminate\Filesystem\Filesystem;
 use Livewire\Features\SupportTesting\Testable;
 use Spatie\LaravelPackageTools\Commands\InstallCommand;
 use Spatie\LaravelPackageTools\Package;
@@ -23,14 +21,8 @@ class FilamentPrivacyBlurServiceProvider extends PackageServiceProvider
 
     public function configurePackage(Package $package): void
     {
-        /*
-         * This class is a Package Service Provider
-         *
-         * More info: https://github.com/spatie/laravel-package-tools
-         */
         $package->name(static::$name)
-            ->hasCommands($this->getCommands())
-            ->hasRoute('web') // Register routes/web.php
+            ->hasRoute('web')
             ->hasInstallCommand(function (InstallCommand $command) {
                 $command
                     ->publishConfigFile()
@@ -62,32 +54,13 @@ class FilamentPrivacyBlurServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
-        // Asset Registration
         FilamentAsset::register(
             $this->getAssets(),
             $this->getAssetPackageName()
         );
 
-        FilamentAsset::registerScriptData(
-            $this->getScriptData(),
-            $this->getAssetPackageName()
-        );
-
-        // Icon Registration
-        FilamentIcon::register($this->getIcons());
-
-        // Handle Stubs
-        if (app()->runningInConsole()) {
-            foreach (app(Filesystem::class)->files(__DIR__ . '/../stubs/') as $file) {
-                $this->publishes([
-                    $file->getRealPath() => base_path("stubs/filament-privacy-blur/{$file->getFilename()}"),
-                ], 'filament-privacy-blur-stubs');
-            }
-        }
-
         ColumnPrivacyMacros::boot();
 
-        // Testing
         Testable::mixin(new TestsFilamentPrivacyBlur);
     }
 
@@ -104,40 +77,6 @@ class FilamentPrivacyBlurServiceProvider extends PackageServiceProvider
         return [
             Css::make('filament-privacy-blur-styles', __DIR__ . '/../resources/css/filament-privacy-blur.css'),
         ];
-    }
-
-    /**
-     * @return array<class-string>
-     */
-    protected function getCommands(): array
-    {
-        return [
-            FilamentPrivacyBlurCommand::class,
-        ];
-    }
-
-    /**
-     * @return array<string>
-     */
-    protected function getIcons(): array
-    {
-        return [];
-    }
-
-    /**
-     * @return array<string>
-     */
-    protected function getRoutes(): array
-    {
-        return [];
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    protected function getScriptData(): array
-    {
-        return [];
     }
 
     /**

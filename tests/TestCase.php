@@ -62,11 +62,8 @@ class TestCase extends Orchestra
         $app['config']->set('database.default', 'testing');
         $app['config']->set('app.key', 'base64:HupSn/k+L4CgygNiA/XwT57hD8lP+22d/xX6wT626e8=');
 
-        $migration1 = include __DIR__ . '/../database/migrations/create_privacy_blur_table.php.stub';
-        $migration1->up();
-
-        $migration2 = include __DIR__ . '/../database/migrations/create_privacy_reveal_logs_table.php.stub';
-        $migration2->up();
+        $migration = include __DIR__ . '/../database/migrations/create_privacy_reveal_logs_table.php.stub';
+        $migration->up();
     }
 
     protected function defineDatabaseMigrations(): void

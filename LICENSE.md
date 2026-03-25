@@ -1,6 +1,6 @@
 The MIT License (MIT)
 
-Copyright (c) Arseno25 <utomnestagumara@gmail.com>
+Copyright (c) 2026 Arseno25 <utomnestagumara@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
