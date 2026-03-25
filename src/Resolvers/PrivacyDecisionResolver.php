@@ -11,11 +11,22 @@ class PrivacyDecisionResolver
     /**
      * Resolve what should be displayed or applied for a column based on all configs.
      *
+     * The authorization flow:
+     * 1. If globally disabled, excepted column/resource/panel → show plain (no blur/mask)
+     * 2. If user is in hiddenRoles → forced blur, never reveal
+     * 3. If user passes auth checks (roles/permissions/policy/closure) → depends on mode:
+     *    - blur/mask/blur_auth → show plain (authorized = bypass blur entirely)
+     *    - blur_click/blur_hover → blur WITH reveal enabled (authorized = can interact to see)
+     *    - hybrid → show masked (even authorized users see masked)
+     * 4. If user FAILS auth checks → blur/mask WITHOUT reveal
+     *
      * @param  string  $columnName  The column name.
      * @param  PrivacyMode|null  $overrideMode  The specifically requested privacy mode on the column.
-     * @param  bool  $isAuthorized  Whether the current user is authorized to bypass blur.
+     * @param  bool  $isAuthorized  Whether the current user passes the auth checks.
+     * @param  int|null  $columnBlur  Column-specific blur amount override.
      * @param  Model|null  $record  The data record.
      * @param  array|null  $hiddenRoles  Roles that should be forced to see blur.
+     * @param  string|null  $resourceClass  The Filament resource class for except checking.
      * @return array{mode: PrivacyMode|null, should_blur: bool, should_mask: bool, reveal_enabled: bool, blur_amount: int}
      */
     public static function resolveForColumn(
@@ -24,7 +35,8 @@ class PrivacyDecisionResolver
         bool $isAuthorized,
         ?int $columnBlur = null,
         ?Model $record = null,
-        ?array $hiddenRoles = null
+        ?array $hiddenRoles = null,
+        ?string $resourceClass = null
     ): array {
         // If globally disabled or panel not registered, do nothing
         if (! PrivacyConfigResolver::isEnabledGlobally()) {
@@ -33,6 +45,16 @@ class PrivacyDecisionResolver
 
         // Check excepted columns
         if (PrivacyConfigResolver::isColumnExcepted($columnName)) {
+            return self::emptyDecision();
+        }
+
+        // Check excepted resources
+        if ($resourceClass && PrivacyConfigResolver::isResourceExcepted($resourceClass)) {
+            return self::emptyDecision();
+        }
+
+        // Check excepted panels
+        if (PrivacyConfigResolver::isPanelExcepted()) {
             return self::emptyDecision();
         }
 
@@ -52,17 +74,29 @@ class PrivacyDecisionResolver
             $isAuthorized = false;
         }
 
-        // If the user is authorized (e.g. role check passed), reveal it full unless it's configured to mask
-        // Actually, if authorized, we usually skip blurring unless it's hybrid
         if ($isAuthorized) {
-            if ($mode === PrivacyMode::Hybrid) {
-                // E.g., maybe authorized users still see it masked
-                $shouldMask = true;
-            } else {
-                return self::emptyDecision();
+            // Authorized users behavior depends on mode:
+            switch ($mode) {
+                case PrivacyMode::Hybrid:
+                    // Even authorized users see masked data in hybrid mode
+                    $shouldMask = true;
+
+                    break;
+
+                case PrivacyMode::BlurClick:
+                case PrivacyMode::BlurHover:
+                    // Authorized users see blur but CAN reveal via click/hover
+                    $shouldBlur = true;
+                    $revealEnabled = true;
+
+                    break;
+
+                default:
+                    // blur, mask, blur_auth — authorized users bypass entirely
+                    return self::emptyDecision();
             }
         } else {
-            // Unauthorized or public user
+            // Unauthorized users — blur/mask WITHOUT reveal
             switch ($mode) {
                 case PrivacyMode::Blur:
                     $shouldBlur = true;
@@ -71,19 +105,19 @@ class PrivacyDecisionResolver
                     break;
                 case PrivacyMode::Mask:
                     $shouldMask = true;
-                    $shouldBlur = false; // Usually mask doesn't need blur
                     $revealEnabled = false;
 
                     break;
                 case PrivacyMode::BlurHover:
                 case PrivacyMode::BlurClick:
+                    // Unauthorized: blur WITHOUT reveal capability
                     $shouldBlur = true;
-                    $revealEnabled = true; // anyone can reveal via UI action
+                    $revealEnabled = false;
 
                     break;
                 case PrivacyMode::BlurAuth:
                     $shouldBlur = true;
-                    $revealEnabled = false; // Since they are NOT authorized, they cannot reveal
+                    $revealEnabled = false;
 
                     break;
                 case PrivacyMode::Hybrid:

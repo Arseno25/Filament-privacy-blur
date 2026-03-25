@@ -39,3 +39,38 @@ it('does not log if audit is disabled', function () {
 
     expect(PrivacyRevealLog::count())->toBe(0);
 });
+
+it('accepts resource and panel context in audit request', function () {
+    Config::set('filament-privacy-blur.audit_enabled', true);
+
+    $this->withoutMiddleware();
+
+    postJson('/filament-privacy-blur/audit', [
+        'column' => 'email',
+        'record_id' => '456',
+        'mode' => 'blur_hover',
+        'resource' => 'App\\Filament\\Resources\\EmployeeResource',
+        'panel' => 'admin',
+    ])->assertSuccessful();
+
+    $log = PrivacyRevealLog::first();
+    expect($log)->not->toBeNull()
+        ->and($log->column_name)->toBe('email')
+        ->and($log->reveal_mode)->toBe('blur_hover')
+        ->and($log->resource)->toBe('App\\Filament\\Resources\\EmployeeResource');
+});
+
+it('returns skipped status when audit is disabled at plugin level', function () {
+    Config::set('filament-privacy-blur.audit_enabled', false);
+
+    $this->withoutMiddleware();
+
+    $response = postJson('/filament-privacy-blur/audit', [
+        'column' => 'salary',
+        'record_id' => '123',
+        'mode' => 'blur_click',
+    ]);
+
+    $response->assertSuccessful()
+        ->assertJson(['status' => 'skipped']);
+});
