@@ -45,12 +45,15 @@ class TestCase extends Orchestra
             InfolistsServiceProvider::class,
             LivewireServiceProvider::class,
             NotificationsServiceProvider::class,
-            SchemasServiceProvider::class,
             SupportServiceProvider::class,
             TablesServiceProvider::class,
             WidgetsServiceProvider::class,
             FilamentPrivacyBlurServiceProvider::class,
         ];
+
+        if (class_exists(SchemasServiceProvider::class)) {
+            $providers[] = SchemasServiceProvider::class;
+        }
 
         sort($providers);
 

@@ -2,6 +2,7 @@
 
 namespace Arseno25\FilamentPrivacyBlur;
 
+use Arseno25\FilamentPrivacyBlur\Services\PrivacyAuthorizationService;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 use Filament\Support\Facades\FilamentView;
@@ -33,13 +34,27 @@ class FilamentPrivacyBlurPlugin implements Plugin
 
     public function boot(Panel $panel): void
     {
-        // Register Global Reveal Toggle into topbar
-        FilamentView::registerRenderHook(
-            PanelsRenderHook::GLOBAL_SEARCH_AFTER,
-            function (): string {
-                return view('filament-privacy-blur::toggle-button')->render();
-            }
-        );
+        // If the plugin is disabled, skip all render hooks
+        if (! $this->isEnabled) {
+            return;
+        }
+
+        // Register Global Reveal Toggle into topbar (respects icon_trigger_enabled config)
+        $iconTriggerEnabled = config('filament-privacy-blur.icon_trigger_enabled', true);
+        if ($iconTriggerEnabled) {
+            FilamentView::registerRenderHook(
+                PanelsRenderHook::GLOBAL_SEARCH_AFTER,
+                function (): string {
+                    // Only show toggle to users who are authorized to reveal
+                    $isAuthorized = PrivacyAuthorizationService::isAuthorized();
+                    if (! $isAuthorized) {
+                        return '';
+                    }
+
+                    return view('filament-privacy-blur::toggle-button')->render();
+                }
+            );
+        }
 
         // Register Alpine.js interaction script in footer
         FilamentView::registerRenderHook(

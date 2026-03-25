@@ -2,6 +2,10 @@
     (function() {
         'use strict';
 
+        // Audit URL from Laravel route — avoids hardcoding paths
+        const auditUrl = @json(route('filament-privacy-blur.audit'));
+        window.__privacyBlurAuditUrl = auditUrl;
+
         // Global reveal state
         let isGlobalRevealed = false;
 
@@ -39,7 +43,7 @@
         }
 
         // Handle click-to-reveal elements
-        // Use capture phase to intercept clicks before Filament's table row handlers
+        // Use bubble phase to avoid intercepting events before Filament's handlers
         document.addEventListener('click', (e) => {
             // Find clickable privacy element — check both the wrapper and inner spans
             let target = e.target.closest('[data-privacy-click]');
@@ -54,9 +58,8 @@
 
             if (!target) return;
 
-            // Stop propagation to prevent triggering Filament's edit modal
-            e.stopImmediatePropagation();
-            e.stopPropagation();
+            // Only prevent default to avoid following links, but don't stop propagation
+            // to preserve Filament's table row clicks, actions, links, and modals
             e.preventDefault();
 
             // Find the inner span that actually has the blur classes
@@ -92,13 +95,13 @@
                     delete blurSpan.dataset.privacyTimeout;
                 }
             }
-        }, true); // Use capture phase
+        }); // Bubble phase — does NOT block other handlers
 
         function logReveal(el) {
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
             if (!csrfToken) return;
 
-            fetch('/filament-privacy-blur/audit', {
+            fetch(auditUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -107,7 +110,9 @@
                 body: JSON.stringify({
                     column: el.dataset.privacyColumn || '',
                     record_id: el.dataset.privacyRecordId || '',
-                    mode: 'blur_click'
+                    mode: el.dataset.privacyMode || 'blur_click',
+                    resource: el.dataset.privacyResource || '',
+                    panel: el.dataset.privacyPanel || '',
                 })
             }).catch(() => {
                 // Silently fail on audit errors

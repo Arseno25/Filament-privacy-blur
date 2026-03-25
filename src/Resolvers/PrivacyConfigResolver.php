@@ -97,4 +97,45 @@ class PrivacyConfigResolver
 
         return in_array($columnName, $excepted);
     }
+
+    /**
+     * Check if a resource class is in the globally excepted list.
+     */
+    public static function isResourceExcepted(string $resourceClass): bool
+    {
+        $plugin = self::getPlugin();
+        $excepted = $plugin ? $plugin->getExceptResources() : [];
+
+        if (empty($excepted)) {
+            $excepted = config('filament-privacy-blur.except_resources', []);
+        }
+
+        return in_array($resourceClass, $excepted);
+    }
+
+    /**
+     * Check if the current panel is in the globally excepted list.
+     */
+    public static function isPanelExcepted(): bool
+    {
+        $panel = Filament::getCurrentPanel();
+        if (! $panel) {
+            return false;
+        }
+
+        $excepted = config('filament-privacy-blur.except_panels', []);
+
+        return in_array($panel->getId(), $excepted);
+    }
+
+    /**
+     * Is audit enabled — respects both plugin-level enableAudit() and config.
+     */
+    public static function isAuditEnabled(): bool
+    {
+        $plugin = self::getPlugin();
+        $pluginAudit = $plugin ? $plugin->getAuditEnabled() : null;
+
+        return $pluginAudit ?? config('filament-privacy-blur.audit_enabled', false);
+    }
 }

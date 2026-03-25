@@ -1,7 +1,10 @@
 <?php
 
 use Arseno25\FilamentPrivacyBlur\Enums\PrivacyMode;
+use Arseno25\FilamentPrivacyBlur\FilamentPrivacyBlurPlugin;
 use Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyConfigResolver;
+use Filament\Facades\Filament;
+use Filament\Panel;
 use Illuminate\Support\Facades\Config;
 
 it('resolves default mode from config', function () {
@@ -24,4 +27,65 @@ it('checks if column is excepted', function () {
 
     expect(PrivacyConfigResolver::isColumnExcepted('id'))->toBeTrue();
     expect(PrivacyConfigResolver::isColumnExcepted('name'))->toBeFalse();
+});
+
+it('checks if resource is excepted', function () {
+    Config::set('filament-privacy-blur.except_resources', ['App\\Filament\\Resources\\PublicResource']);
+
+    expect(PrivacyConfigResolver::isResourceExcepted('App\\Filament\\Resources\\PublicResource'))->toBeTrue();
+    expect(PrivacyConfigResolver::isResourceExcepted('App\\Filament\\Resources\\PrivateResource'))->toBeFalse();
+});
+
+it('resolves audit enabled from config', function () {
+    Config::set('filament-privacy-blur.audit_enabled', true);
+
+    expect(PrivacyConfigResolver::isAuditEnabled())->toBeTrue();
+});
+
+it('resolves audit disabled from config', function () {
+    Config::set('filament-privacy-blur.audit_enabled', false);
+
+    expect(PrivacyConfigResolver::isAuditEnabled())->toBeFalse();
+});
+
+it('resolves default mask strategy', function () {
+    Config::set('filament-privacy-blur.default_mask_strategy', 'email');
+
+    expect(PrivacyConfigResolver::resolveMaskStrategy())->toBe('email');
+});
+
+it('uses column override for mask strategy', function () {
+    Config::set('filament-privacy-blur.default_mask_strategy', 'generic');
+
+    expect(PrivacyConfigResolver::resolveMaskStrategy('phone'))->toBe('phone');
+});
+
+it('resolves audit enabled from plugin context in active panel', function () {
+    $plugin = FilamentPrivacyBlurPlugin::make()->enableAudit(false);
+    $panel = Panel::make('test')->id('test')->plugin($plugin);
+    Filament::setCurrentPanel($panel);
+
+    // Config says true, but plugin says false. Plugin wins.
+    Config::set('filament-privacy-blur.audit_enabled', true);
+    expect(PrivacyConfigResolver::isAuditEnabled())->toBeFalse();
+});
+
+it('resolves resource excepted from plugin context in active panel', function () {
+    $plugin = FilamentPrivacyBlurPlugin::make()->exceptResources(['App\\Filament\\Resources\\PanelResource']);
+    $panel = Panel::make('test')->id('test')->plugin($plugin);
+    Filament::setCurrentPanel($panel);
+
+    expect(PrivacyConfigResolver::isResourceExcepted('App\\Filament\\Resources\\PanelResource'))->toBeTrue();
+});
+
+it('checks if panel is excepted', function () {
+    Config::set('filament-privacy-blur.except_panels', ['admin']);
+
+    $adminPanel = Panel::make('admin')->id('admin');
+    Filament::setCurrentPanel($adminPanel);
+    expect(PrivacyConfigResolver::isPanelExcepted())->toBeTrue();
+
+    $userPanel = Panel::make('user')->id('user');
+    Filament::setCurrentPanel($userPanel);
+    expect(PrivacyConfigResolver::isPanelExcepted())->toBeFalse();
 });
