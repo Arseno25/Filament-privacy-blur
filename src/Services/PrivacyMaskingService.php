@@ -41,10 +41,10 @@ class PrivacyMaskingService
         } elseif ($localLength <= 2) {
             $maskedLocal = str_repeat('*', $localLength);
         } else {
-            $maskedLocal = mb_substr($local, 0, 1).str_repeat('*', $localLength - 2).mb_substr($local, -1);
+            $maskedLocal = mb_substr($local, 0, 1) . str_repeat('*', $localLength - 2) . mb_substr($local, -1);
         }
 
-        return $maskedLocal.'@'.$domain;
+        return $maskedLocal . '@' . $domain;
     }
 
     protected function maskPhone(string $value): string
@@ -56,11 +56,11 @@ class PrivacyMaskingService
 
         // For medium-length phones (5-8 chars), show first 2 and mask rest
         if ($length <= 8) {
-            return mb_substr($value, 0, 2).str_repeat('*', $length - 2);
+            return mb_substr($value, 0, 2) . str_repeat('*', $length - 2);
         }
 
         // For longer phones, show first 4 and last 4
-        return mb_substr($value, 0, 4).str_repeat('*', $length - 8).mb_substr($value, -4);
+        return mb_substr($value, 0, 4) . str_repeat('*', $length - 8) . mb_substr($value, -4);
     }
 
     protected function maskName(string $value): string
@@ -72,7 +72,7 @@ class PrivacyMaskingService
                 return $word;
             }
 
-            return mb_substr($word, 0, 2).str_repeat('*', $len - 2);
+            return mb_substr($word, 0, 2) . str_repeat('*', $len - 2);
         }, $words);
 
         return implode(' ', $maskedWords);
@@ -85,7 +85,7 @@ class PrivacyMaskingService
             return str_repeat('*', $length);
         }
 
-        return mb_substr($value, 0, 3).str_repeat('*', $length - 6).mb_substr($value, -3);
+        return mb_substr($value, 0, 3) . str_repeat('*', $length - 6) . mb_substr($value, -3);
     }
 
     protected function maskNik(string $value): string
@@ -94,7 +94,7 @@ class PrivacyMaskingService
             return $this->maskGeneric($value);
         }
 
-        return mb_substr($value, 0, 4).str_repeat('*', 8).mb_substr($value, -4);
+        return mb_substr($value, 0, 4) . str_repeat('*', 8) . mb_substr($value, -4);
     }
 
     protected function maskAddress(string $value): string
@@ -104,7 +104,7 @@ class PrivacyMaskingService
             return str_repeat('*', $length);
         }
 
-        return mb_substr($value, 0, 10).str_repeat('*', $length - 10);
+        return mb_substr($value, 0, 10) . str_repeat('*', $length - 10);
     }
 
     protected function maskGeneric(string $value): string
@@ -117,6 +117,6 @@ class PrivacyMaskingService
             return str_repeat('*', $length);
         }
 
-        return mb_substr($value, 0, 1).str_repeat('*', $length - 2).mb_substr($value, -1);
+        return mb_substr($value, 0, 1) . str_repeat('*', $length - 2) . mb_substr($value, -1);
     }
 }

@@ -159,6 +159,7 @@ class PrivacyAuthorizationService
                     foreach ($roles as $role) {
                         if ($user->{$method}($role)) {
                             $authorized = true;
+
                             break;
                         }
                     }
