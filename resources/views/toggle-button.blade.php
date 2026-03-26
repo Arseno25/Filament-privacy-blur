@@ -2,7 +2,7 @@
      x-data="privacyToggle()"
      x-init="initToggle()"
      style="display: none;"
-     x-show="hasGloballyRevealableFields()">
+     x-show="hasGloballyRevealableFields">
     <x-filament::icon-button
         color="gray"
         icon="heroicon-o-eye"

@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  A Filament v5 plugin that provides <strong>visual privacy protection</strong> for sensitive data. Apply blur and masking effects to table columns, form inputs, and infolist entries to prevent accidental exposure during screen sharing or shoulder surfing. 👁️
+  A Filament plugin for <strong>v4.x and v5.x</strong> that provides visual privacy protection for sensitive data. Apply blur and masking effects to table columns, form inputs, and infolist entries to prevent accidental exposure during screen sharing or shoulder surfing. 👁️
 </p>
 
 ## ✨ Features
@@ -31,9 +31,9 @@
 
 ## 📋 Requirements
 
-- **PHP**: 8.2 or higher (8.3+ required for Filament v5.x)
+- **PHP**: 8.2 or higher
 - **Laravel**: 11 or higher
-- **Filament**: v5.x
+- **Filament**: v4.x or v5.x
 - **Alpine.js**: Bundled with Filament
 
 ## 🚀 Installation
@@ -368,7 +368,7 @@ When enabled, reveal actions are logged to the `privacy_reveal_logs` table with:
 | `ip_address` | IP address of the user |
 | `user_agent` | Browser/user agent string |
 | `panel_id` | Filament panel ID (for multi-panel apps) |
-| `resource_class` | Fully qualified resource class name |
+| `resource` | Resource identifier (e.g., UserResource) |
 | `tenant_id` | Tenant ID (for multi-tenant apps) |
 
 > **💡 Multi-Tenant Support:** The plugin automatically captures tenant context when using `stancl/tenancy` or similar packages.
@@ -421,7 +421,7 @@ This ensures that global reveal cannot bypass any authorization rules.
 |-----------|-------------------|
 | **PHP** | 8.2, 8.3, 8.4 |
 | **Laravel** | 11, 12 |
-| **Filament** | v5.x |
+| **Filament** | v4.x, v5.x |
 | **Filament Shield** | ✅ Compatible via Laravel Gates |
 | **Spatie Permission** | ✅ Compatible via `can()` method |
 

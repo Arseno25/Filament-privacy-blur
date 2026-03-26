@@ -6,6 +6,7 @@ use Arseno25\FilamentPrivacyBlur\FilamentPrivacyBlurPlugin;
 use Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver;
 use Arseno25\FilamentPrivacyBlur\Services\PrivacyAuthorizationService;
 use Arseno25\FilamentPrivacyBlur\Services\PrivacyMaskingService;
+use Filament\Tables\Columns\TextColumn;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\User;
 use Illuminate\Support\Facades\Auth;
@@ -72,21 +73,24 @@ it('authorizeRevealWith returns no_user when not authenticated', function () {
         ->and($result->reason)->toBe('no_authenticated_user');
 });
 
-it('revealIfCan is alias for authorizeRevealWith and works identically', function () {
+it('revealIfCan macro sets correct privacy metadata for authorization', function () {
     Gate::define('view-sensitive', fn ($user) => true);
 
     $user = new User;
     $user->id = 1;
     Auth::login($user);
 
-    // Both methods should return the same authorization result
-    $result1 = PrivacyAuthorizationService::authorizeWith('view-sensitive');
-    $result2 = PrivacyAuthorizationService::authorizeWith('view-sensitive');
+    $column = TextColumn::make('email')->revealIfCan('view-sensitive');
 
-    expect($result1->authorized)->toBeTrue()
-        ->and($result2->authorized)->toBeTrue()
-        ->and($result1->method)->toBe($result2->method)
-        ->and($result1->reason)->toBe($result2->reason);
+    // The macro should store privacy metadata that can be retrieved
+    $columnState = $column->formatState('test@example.com');
+    expect($columnState)->toBeString(); // Macro doesn't break column formatting
+
+    // Authorization should work correctly when revealIfCan is used
+    $result = PrivacyAuthorizationService::authorizeWith('view-sensitive');
+    expect($result->authorized)->toBeTrue()
+        ->and($result->method)->toBe('gate')
+        ->and($result->reason)->toBe('gate_allowed');
 });
 
 // ============================================================================

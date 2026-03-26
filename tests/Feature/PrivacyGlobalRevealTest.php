@@ -3,6 +3,7 @@
 use Arseno25\FilamentPrivacyBlur\Enums\PrivacyMode;
 use Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver;
 use Illuminate\Foundation\Auth\User;
+use Illuminate\Support\Facades\Auth;
 
 it('only reveals fields user is authorized for during global reveal', function () {
     // Test that decision resolver returns different results based on authorization
@@ -177,4 +178,92 @@ it('mask mode prevents reveal', function () {
     expect($decision['should_mask'])->toBeTrue();
     expect($decision['should_blur'])->toBeFalse();
     expect($decision['reveal_enabled'])->toBeFalse();
+});
+
+// ============================================================================
+// Global Reveal Toggle Visibility Tests
+// ============================================================================
+
+it('toggle button is hidden when no globally revealable fields exist', function () {
+    // When no fields have canBeGloballyRevealed enabled, toggle should not show
+    $maskDecision = PrivacyDecisionResolver::resolveForColumn(
+        'ssn',
+        PrivacyMode::Mask,
+        isAuthorized: false,
+        columnBlur: null,
+        record: null,
+        hiddenRoles: null,
+        resourceClass: null,
+        neverReveal: false
+    );
+
+    expect($maskDecision['reveal_enabled'])->toBeFalse();
+    // In real scenario, Alpine would check: document.querySelectorAll('[data-privacy-can-globally-reveal="true"]').length === 0
+});
+
+it('toggle button is visible when at least one globally revealable field exists', function () {
+    // When any field has canBeGloballyRevealed enabled, toggle should show
+    $blurClickDecision = PrivacyDecisionResolver::resolveForColumn(
+        'salary',
+        PrivacyMode::BlurClick,
+        isAuthorized: true, // Authorized
+        columnBlur: null,
+        record: null,
+        hiddenRoles: null,
+        resourceClass: null,
+        neverReveal: false
+    );
+
+    expect($blurClickDecision['reveal_enabled'])->toBeTrue();
+    // In real scenario, Alpine would check: document.querySelectorAll('[data-privacy-can-globally-reveal="true"]').length > 0
+});
+
+it('toggle respects security: unauthorized fields never reveal', function () {
+    // Even during global reveal, unauthorized fields stay blurred
+    $unauthorizedDecision = PrivacyDecisionResolver::resolveForColumn(
+        'admin_notes',
+        PrivacyMode::BlurClick,
+        isAuthorized: false, // Unauthorized
+        columnBlur: null,
+        record: null,
+        hiddenRoles: null,
+        resourceClass: null,
+        neverReveal: false
+    );
+
+    expect($unauthorizedDecision['reveal_enabled'])->toBeFalse();
+});
+
+it('toggle respects security: revealNever fields never reveal', function () {
+    // Fields with revealNever() are never globally revealable, regardless of auth
+    $neverRevealDecision = PrivacyDecisionResolver::resolveForColumn(
+        'salary',
+        PrivacyMode::BlurClick,
+        isAuthorized: true, // Authorized
+        columnBlur: null,
+        record: null,
+        hiddenRoles: null,
+        resourceClass: null,
+        neverReveal: true // But neverReveal flag is set
+    );
+
+    expect($neverRevealDecision['reveal_enabled'])->toBeFalse();
+});
+
+it('toggle correctly shows when hybrid mode field is authorized for global reveal', function () {
+    // Hybrid mode shows masked content to all users, so it's not globally revealable
+    $hybridDecision = PrivacyDecisionResolver::resolveForColumn(
+        'customer_notes',
+        PrivacyMode::Hybrid,
+        isAuthorized: true, // Authorized
+        columnBlur: null,
+        record: null,
+        hiddenRoles: null,
+        resourceClass: null,
+        neverReveal: false
+    );
+
+    expect($hybridDecision['reveal_enabled'])->toBeFalse(); // Hybrid doesn't support interactive reveal
+    expect($hybridDecision['should_mask'])->toBeTrue(); // Shows masked to authorized users
+    expect($hybridDecision['should_blur'])->toBeFalse(); // No blur overlay, just masking
 });

@@ -23,10 +23,11 @@ it('tests export masking uses mask strategy instead of hardcoded stars', functio
     $panel = Panel::make('test')->id('test')->plugin(FilamentPrivacyBlurPlugin::make());
     Filament::setCurrentPanel($panel);
 
-    $request = Request::create('/export', 'GET');
+    // Simulate a real export request
+    $request = Request::create('/users/export', 'GET');
     $request->setRouteResolver(
         function () use ($request) {
-            return (new Route('GET', '/export', []))->bind($request)->name('users.export');
+            return (new Route('GET', '/users/export', []))->bind($request)->name('filament.admin.users.export');
         }
     );
 
@@ -40,6 +41,39 @@ it('tests export masking uses mask strategy instead of hardcoded stars', functio
 
     // Should be masked using email strategy, not hardcoded '********'
     expect($formatted)->toBe('u**r@example.com');
+});
+
+it('properly detects export context in real Filament export scenarios', function () {
+    $panel = Panel::make('admin')->id('admin')->plugin(FilamentPrivacyBlurPlugin::make());
+    Filament::setCurrentPanel($panel);
+
+    // Test various Filament export URL patterns
+    $exportUrls = [
+        '/users/export',
+        '/admin/users/export',
+        '/filament/admin/users/export',
+        'https://example.com/users/export',
+    ];
+
+    foreach ($exportUrls as $url) {
+        $request = Request::create($url, 'GET');
+        $request->setRouteResolver(
+            function () use ($request) {
+                return (new Route('GET', '/export', []))->bind($request)->name('users.export');
+            }
+        );
+
+        app()->instance('request', $request);
+
+        $column = TextColumn::make('salary')
+            ->private()
+            ->maskUsing('email');
+
+        // Export context should be detected and masking should be applied
+        $formatted = $column->formatState('high-salary@example.com');
+        expect($formatted)->not->toBe('high-salary@example.com')
+            ->and($formatted)->toContain('**'); // Should be masked
+    }
 });
 
 it('tests export masking with generic strategy fallback', function () {

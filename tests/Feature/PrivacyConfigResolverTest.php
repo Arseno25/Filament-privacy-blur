@@ -89,3 +89,21 @@ it('checks if panel is excepted', function () {
     Filament::setCurrentPanel($userPanel);
     expect(PrivacyConfigResolver::isPanelExcepted())->toBeFalse();
 });
+
+it('exceptPanels at plugin level affects resolver decision flow', function () {
+    // Plugin-level exceptPanels should override config
+    $plugin = FilamentPrivacyBlurPlugin::make()
+        ->exceptPanels(['admin-panel']);
+
+    $adminPanel = Panel::make('admin')->id('admin-panel')->plugin($plugin);
+    Filament::setCurrentPanel($adminPanel);
+
+    // Even though config doesn't exclude this panel, plugin setting should win
+    Config::set('filament-privacy-blur.except_panels', []);
+    expect(PrivacyConfigResolver::isPanelExcepted())->toBeTrue();
+
+    // Different panel should not be affected
+    $userPanel = Panel::make('user')->id('user-panel')->plugin($plugin);
+    Filament::setCurrentPanel($userPanel);
+    expect(PrivacyConfigResolver::isPanelExcepted())->toBeFalse();
+});
