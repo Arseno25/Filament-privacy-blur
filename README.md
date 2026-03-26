@@ -1,10 +1,20 @@
-# 🔐 Filament Privacy Blur
+<h1 align="center">🔐 Filament Privacy Blur</h1>
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/arseno25/filament-privacy-blur.svg?style=flat-square)](https://packagist.org/packages/arseno25/filament-privacy-blur)
-[![Total Downloads](https://img.shields.io/packagist/dt/arseno25/filament-privacy-blur.svg?style=flat-square)](https://packagist.org/packages/arseno25/filament-privacy-blur)
-[![License](https://img.shields.io/packagist/l/arseno25/filament-privacy-blur.svg?style=flat-square)](https://packagist.org/packages/arseno25/filament-privacy-blur)
+<p align="center">
+  <a href="https://packagist.org/packages/arseno25/filament-privacy-blur">
+    <img src="https://img.shields.io/packagist/v/arseno25/filament-privacy-blur.svg?style=flat-square" alt="Latest Version on Packagist">
+  </a>
+  <a href="https://packagist.org/packages/arseno25/filament-privacy-blur">
+    <img src="https://img.shields.io/packagist/dt/arseno25/filament-privacy-blur.svg?style=flat-square" alt="Total Downloads">
+  </a>
+  <a href="https://github.com/arseno25/filament-privacy-blur/blob/main/LICENSE.md">
+    <img src="https://img.shields.io/packagist/l/arseno25/filament-privacy-blur.svg?style=flat-square" alt="License">
+  </a>
+</p>
 
-A Filament v4/v5 plugin that provides **visual privacy protection** for sensitive data. Apply blur and masking effects to table columns, form inputs, and infolist entries to prevent accidental exposure during screen sharing or shoulder surfing. 👁️
+<p align="center">
+  A Filament v4/v5 plugin that provides <strong>visual privacy protection</strong> for sensitive data. Apply blur and masking effects to table columns, form inputs, and infolist entries to prevent accidental exposure during screen sharing or shoulder surfing. 👁️
+</p>
 
 ## ✨ Features
 
