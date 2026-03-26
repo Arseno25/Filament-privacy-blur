@@ -74,7 +74,7 @@ class FilamentPrivacyBlurServiceProvider extends PackageServiceProvider
     protected function getAssets(): array
     {
         return [
-            Css::make('filament-privacy-blur-styles', __DIR__.'/../resources/css/filament-privacy-blur.css'),
+            Css::make('filament-privacy-blur-styles', __DIR__ . '/../resources/css/filament-privacy-blur.css'),
         ];
     }
 
