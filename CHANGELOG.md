@@ -4,45 +4,59 @@ All notable changes to `filament-privacy-blur` will be documented in this file.
 
 ## [Unreleased] - 2026-03-26
 
-### Added - Ability-First Authorization Architecture
+### Added
 
-- **New API Methods:**
-  - `authorizeRevealWith($ability)` - Primary ability-first authorization using Laravel Gate/Policy
-  - `revealIfCan($ability)` - Alias with clearer semantics for ability checks
-  - Full support for Filament Shield via standard Laravel Gates
-  - `PrivacyDecision` DTO for explicit decision modeling
-  - `AuthorizationResult` DTO for authorization context
+- **Authorization-First Architecture**
+  - `revealIfCan($ability)` - Primary API for Laravel Gate/Policy authorization
+  - `authorizeRevealWith($ability)` - Alias for revealIfCan with explicit semantics
+  - `authorizeRevealUsing($closure)` - Custom closure with full context (user, record)
+  - `PrivacyDecision` DTO - Explicit decision modeling with clear property names
+  - `AuthorizationResult` DTO - Authorization context with method and reason
 
-- **Enhanced Authorization Engine:**
-  - Gate/Policy checks now take priority over role/permission methods
-  - Support for `hasPermissionTo()` Spatie method (in addition to `hasAnyPermission()`)
-  - Multi-tenant context capture in audit logs (`data-privacy-tenant-id`)
-  - Improved fallback chain for role checking methods
+- **Enhanced Authorization Engine**
+  - Gate/Policy checks now take priority as the primary authorization mechanism
+  - Support for passing Model records to Gate/Policy for context-aware authorization
+  - Multi-tenant context capture in audit logs (`data-privacy-tenant-id` attribute)
+  - Improved fallback chain for role checking methods (hasAnyRole, hasRole, hasExactRole)
 
-- **Enhanced Frontend:**
-  - New explicit data attributes for security
+- **New Data Attributes for Security**
   - `data-privacy-can-reveal-interactively` - Server decision on click/hover reveal
   - `data-privacy-can-globally-reveal` - Server decision on global toggle reveal
-  - `data-privacy-never-reveal` - Override flag for non-revealable fields
-  - Backward compatibility with legacy `data-privacy-reveal-allowed` attribute
+  - `data-privacy-privacy-never-reveal` - Override flag for non-revealable fields
+
+- **Plugin Configuration Options**
+  - `showGlobalRevealToggle()` - Control visibility of global reveal toggle
+  - `hideGlobalRevealToggle()` - Hide the toggle entirely
+  - `exceptPanels([$panels])` - Exclude specific panels from privacy
 
 ### Changed
 
-- Authorization priority order now follows ability-first approach:
-  1. `authorizeRevealUsing()` / `authorizeUsing()` - Custom closure
-  2. `authorizeRevealWith()` / `revealIfCan()` - Laravel Gate/Policy (NEW PRIMARY)
-  3. `permission()` - Single permission via can()
-  4. `visibleToPermissions()` - Multiple permissions via can()
+- **Authorization Priority Order** - The new ability-first approach:
+  1. `authorizeRevealUsing()` / `authorizeUsing()` - Custom closure (highest priority)
+  2. `revealIfCan()` / `authorizeRevealWith()` - Laravel Gate/Policy (PRIMARY)
+  3. `permission()` - Single permission via `can()`
+  4. `visibleToPermissions()` - Multiple permissions (any match)
   5. `visibleToRoles()` - Role helper (optional, degrades gracefully)
   6. `policy()` - Legacy policy string
 
-### Internal Changes
+- **Global Reveal Toggle** - Now always rendered (when enabled), but JavaScript only reveals fields where:
+  - The current user is authorized to view the field
+  - The field is not marked as `revealNever()`
+  - The user is not in `hiddenFromRoles()` for that field
 
-- Refactored `PrivacyAuthorizationService` with ability-first methods
-- Refactored `PrivacyDecisionResolver` to use `PrivacyDecision` DTO
-- Added `checkAuthorization()` method for metadata-based authorization
-- Improved role detection with multiple method fallbacks
-- Better Spatie/Shield compatibility via `can()` integration
+- **Frontend-Driven Security** - All privacy decisions are now server-rendered as HTML data attributes. The JavaScript only respects these decisions and cannot override them.
+
+### Fixed
+
+- **Global Reveal Toggle Logic** - Fixed issue where toggle never appeared due to `isAuthorized()` returning false without context. Toggle now always renders (when enabled) and respects individual field authorization.
+- **Simplified Alpine.js Script** - Removed dead legacy fallback code, cleaner global reveal logic
+- **README Documentation** - Fixed inconsistencies in composer commands, aligned examples with actual API, corrected audit field naming
+
+### Security
+
+- **Secure-by-Default Behavior Reinforced** - Fields with `->private()` but no explicit authorization will NOT allow reveal for any user, including in global reveal
+- **Global Reveal Safety** - Global toggle can only reveal fields where the current user has explicit authorization
+- **Export Safety** - Masking is automatically applied in export contexts for all blur modes
 
 ## v1.0.0 - 2026-03-26
 
@@ -55,7 +69,7 @@ All notable changes to `filament-privacy-blur` will be documented in this file.
 - Global reveal toggle button in Filament topbar
 - Data masking with built-in strategies: email, phone, NIK, full_name, api_key, address, and generic
 - Custom masking via Closure
-- Authorization support: Spatie roles, permissions, Laravel gates/policies, and custom closures
+- Authorization support: Laravel Gates, Policies, Spatie roles/permissions, and custom closures
 - Role exclusion (force blur for specific roles)
 - Audit logging for reveal actions (optional) with IP address and user agent
 - Export safety: automatic masking during Filament exports
@@ -65,21 +79,18 @@ All notable changes to `filament-privacy-blur` will be documented in this file.
 
 - **Secure by default:** Fields with `->private()` but no explicit authorization will NOT allow reveal
 - Global reveal now only affects fields the user is authorized to see
-- `revealNever()` now truly prevents all reveal methods (click, hover, global toggle)
-- `hiddenFromRoles()` now prevents any bypass of the blur
+- `revealNever()` truly prevents all reveal methods (click, hover, global toggle)
+- `hiddenFromRoles()` prevents any bypass of the blur
 - CSS blur keeps original data in DOM (use mask mode for sensitive data)
 - Audit logging tracks reveal actions with user, IP, user agent, and timestamp
 
-### What's Changed
+### Tested On
 
-- Bump ramsey/composer-install from 3 to 4 by @dependabot[bot] in https://github.com/Arseno25/Filament-privacy-blur/pull/1
-- Main by @Arseno25 in https://github.com/Arseno25/Filament-privacy-blur/pull/2
-- Bump ramsey/composer-install to v4 and update privacy blur styles by @Arseno25 in https://github.com/Arseno25/Filament-privacy-blur/pull/3
-- Enhance privacy blur feature with resource exceptions and refined auth logic by @Arseno25 in https://github.com/Arseno25/Filament-privacy-blur/pull/4
+- PHP: 8.2, 8.3, 8.4
+- Laravel: 11, 12
+- Filament: v5.x
+- Pest: 107 tests passing with 190 assertions
+- PHPStan: Level 4, no errors
+- Laravel Pint: Passing
 
-### New Contributors
-
-- @dependabot[bot] made their first contribution in https://github.com/Arseno25/Filament-privacy-blur/pull/1
-- @Arseno25 made their first contribution in https://github.com/Arseno25/Filament-privacy-blur/pull/2
-
-**Full Changelog**: https://github.com/Arseno25/Filament-privacy-blur/commits/v1.0.0
+**Full Changelog**: https://github.com/Arseno25/filament-privacy-blur/commits/v1.0.0

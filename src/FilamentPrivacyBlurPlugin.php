@@ -2,11 +2,11 @@
 
 namespace Arseno25\FilamentPrivacyBlur;
 
-use Arseno25\FilamentPrivacyBlur\Services\PrivacyAuthorizationService;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 use Filament\Support\Facades\FilamentView;
 use Filament\View\PanelsRenderHook;
+use Illuminate\Support\Facades\View;
 
 class FilamentPrivacyBlurPlugin implements Plugin
 {
@@ -25,7 +25,11 @@ class FilamentPrivacyBlurPlugin implements Plugin
 
     protected array $exceptResources = [];
 
+    protected array $exceptPanels = [];
+
     protected ?bool $auditEnabled = null;
+
+    protected bool $showGlobalRevealToggle = true;
 
     public function register(Panel $panel): void
     {
@@ -41,23 +45,28 @@ class FilamentPrivacyBlurPlugin implements Plugin
 
         // Register Global Reveal Toggle into topbar (respects icon_trigger_enabled config)
         $iconTriggerEnabled = config('filament-privacy-blur.icon_trigger_enabled', true);
-        if ($iconTriggerEnabled) {
+        if ($iconTriggerEnabled && $this->showGlobalRevealToggle) {
             FilamentView::registerRenderHook(
                 PanelsRenderHook::GLOBAL_SEARCH_AFTER,
                 function (): string {
-                    // Only show toggle to users who are authorized to reveal at least one field.
-                    // With the new secure-by-default behavior, isAuthorized() without constraints
-                    // returns false, so the toggle only shows when fields have explicit authorization.
-                    // This is a security feature to prevent unauthorized global reveal.
-                    $isAuthorized = PrivacyAuthorizationService::isAuthorized();
-                    if (! $isAuthorized) {
-                        return '';
-                    }
-
+                    // The global reveal toggle button should always be rendered.
+                    // Whether it functions is controlled by:
+                    // 1. The presence of privacy-enabled fields on the page (determined at render time)
+                    // 2. The `data-privacy-can-globally-reveal` attributes on each field
+                    // 3. User authorization for each individual field
+                    //
+                    // The JavaScript will only reveal fields that have `data-privacy-can-globally-reveal="true"`,
+                    // which is set server-side based on actual field authorization.
+                    // This ensures security: no global reveal bypass is possible.
                     return view('filament-privacy-blur::toggle-button')->render();
                 }
             );
         }
+
+        // Share plugin configuration with all views
+        View::composer('filament-privacy-blur::*', function ($view) {
+            $view->with('privacyBlurPlugin', $this);
+        });
 
         // Register Alpine.js interaction script in footer
         FilamentView::registerRenderHook(
@@ -103,9 +112,30 @@ class FilamentPrivacyBlurPlugin implements Plugin
         return $this;
     }
 
+    public function exceptPanels(array $panels): static
+    {
+        $this->exceptPanels = $panels;
+
+        return $this;
+    }
+
     public function enableAudit(bool $condition = true): static
     {
         $this->auditEnabled = $condition;
+
+        return $this;
+    }
+
+    public function showGlobalRevealToggle(bool $condition = true): static
+    {
+        $this->showGlobalRevealToggle = $condition;
+
+        return $this;
+    }
+
+    public function hideGlobalRevealToggle(): static
+    {
+        $this->showGlobalRevealToggle = false;
 
         return $this;
     }
@@ -135,9 +165,19 @@ class FilamentPrivacyBlurPlugin implements Plugin
         return $this->exceptResources;
     }
 
+    public function getExceptPanels(): array
+    {
+        return $this->exceptPanels;
+    }
+
     public function getAuditEnabled(): ?bool
     {
         return $this->auditEnabled;
+    }
+
+    public function getShowGlobalRevealToggle(): bool
+    {
+        return $this->showGlobalRevealToggle;
     }
 
     public static function make(): static
