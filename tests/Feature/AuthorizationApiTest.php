@@ -1,8 +1,11 @@
 <?php
 
-use Arseno25\FilamentPrivacyBlur\DataTransferObjects\AuthorizationResult;
 use Arseno25\FilamentPrivacyBlur\Enums\PrivacyMode;
+use Arseno25\FilamentPrivacyBlur\Filament\ColumnPrivacyMacros;
+use Arseno25\FilamentPrivacyBlur\FilamentPrivacyBlurPlugin;
+use Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver;
 use Arseno25\FilamentPrivacyBlur\Services\PrivacyAuthorizationService;
+use Arseno25\FilamentPrivacyBlur\Services\PrivacyMaskingService;
 use Arseno25\FilamentPrivacyBlur\Tests\TestCase;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\User;
@@ -50,8 +53,10 @@ it('authorizeRevealWith passes record to gate for policy checks', function () {
     $user->id = 1;
     Auth::login($user);
 
-    $post = new class extends Model {
+    $post = new class extends Model
+    {
         protected $fillable = ['user_id'];
+
         public $user_id = 1;
     };
 
@@ -177,12 +182,13 @@ it('role helpers degrade gracefully when no role methods exist', function () {
 });
 
 it('role helpers work with hasAnyRole method', function () {
-    $user = new class extends User {
+    $user = new class extends User
+    {
         public array $roles = ['editor'];
 
         public function hasAnyRole(array $roles): bool
         {
-            return !empty(array_intersect($roles, $this->roles));
+            return ! empty(array_intersect($roles, $this->roles));
         }
     };
     $user->id = 1;
@@ -196,7 +202,8 @@ it('role helpers work with hasAnyRole method', function () {
 });
 
 it('role helpers work with hasRole method', function () {
-    $user = new class extends User {
+    $user = new class extends User
+    {
         public string $role = 'admin';
 
         public function hasRole(string $role): bool
@@ -215,7 +222,8 @@ it('role helpers work with hasRole method', function () {
 });
 
 it('role helpers return denied when user does not have required role', function () {
-    $user = new class extends User {
+    $user = new class extends User
+    {
         public string $role = 'user';
 
         public function hasRole(string $role): bool
@@ -289,7 +297,7 @@ it('revealNever prevents all reveal regardless of authorization', function () {
     Auth::login($user);
 
     // User is authorized, but neverReveal is set
-    $decision = \Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver::createDecision(
+    $decision = PrivacyDecisionResolver::createDecision(
         'test_field',
         PrivacyMode::BlurClick,
         isAuthorized: true,
@@ -311,7 +319,7 @@ it('revealNever overrides blur_click mode', function () {
     $user->id = 1;
     Auth::login($user);
 
-    $decision = \Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver::createDecision(
+    $decision = PrivacyDecisionResolver::createDecision(
         'test_field',
         PrivacyMode::BlurClick,
         isAuthorized: true,
@@ -332,7 +340,7 @@ it('revealNever overrides blur_hover mode', function () {
     $user->id = 1;
     Auth::login($user);
 
-    $decision = \Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver::createDecision(
+    $decision = PrivacyDecisionResolver::createDecision(
         'test_field',
         PrivacyMode::BlurHover,
         isAuthorized: true,
@@ -353,18 +361,19 @@ it('revealNever overrides blur_hover mode', function () {
 it('hiddenFromRoles prevents reveal even for authorized users', function () {
     Gate::define('view-data', fn ($user) => true);
 
-    $user = new class extends User {
+    $user = new class extends User
+    {
         public array $roles = ['guest'];
 
         public function hasAnyRole(array $roles): bool
         {
-            return !empty(array_intersect($roles, $this->roles));
+            return ! empty(array_intersect($roles, $this->roles));
         }
     };
     $user->id = 1;
     Auth::login($user);
 
-    $decision = \Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver::createDecision(
+    $decision = PrivacyDecisionResolver::createDecision(
         'test_field',
         PrivacyMode::BlurClick,
         isAuthorized: true, // Authorized via gate
@@ -384,7 +393,7 @@ it('hiddenFromRoles with empty array does not hide', function () {
     $user->id = 1;
     Auth::login($user);
 
-    $decision = \Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver::createDecision(
+    $decision = PrivacyDecisionResolver::createDecision(
         'test_field',
         PrivacyMode::BlurClick,
         isAuthorized: true,
@@ -410,7 +419,7 @@ it('global reveal only affects fields with canBeGloballyRevealed true', function
     Auth::login($user);
 
     // Field that CAN be globally revealed
-    $decision1 = \Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver::createDecision(
+    $decision1 = PrivacyDecisionResolver::createDecision(
         'sensitive_field',
         PrivacyMode::BlurClick,
         isAuthorized: true,
@@ -422,7 +431,7 @@ it('global reveal only affects fields with canBeGloballyRevealed true', function
     );
 
     // Field that CANNOT be globally revealed (blur mode - no reveal)
-    $decision2 = \Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver::createDecision(
+    $decision2 = PrivacyDecisionResolver::createDecision(
         'always_blurred',
         PrivacyMode::Blur,
         isAuthorized: true,
@@ -444,7 +453,7 @@ it('global reveal is blocked by neverReveal flag', function () {
     $user->id = 1;
     Auth::login($user);
 
-    $decision = \Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver::createDecision(
+    $decision = PrivacyDecisionResolver::createDecision(
         'never_reveal_field',
         PrivacyMode::BlurClick,
         isAuthorized: true,
@@ -461,18 +470,19 @@ it('global reveal is blocked by neverReveal flag', function () {
 it('global reveal is blocked by hidden roles', function () {
     Gate::define('view-data', fn ($user) => true);
 
-    $user = new class extends User {
+    $user = new class extends User
+    {
         public array $roles = ['guest'];
 
         public function hasAnyRole(array $roles): bool
         {
-            return !empty(array_intersect($roles, $this->roles));
+            return ! empty(array_intersect($roles, $this->roles));
         }
     };
     $user->id = 1;
     Auth::login($user);
 
-    $decision = \Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver::createDecision(
+    $decision = PrivacyDecisionResolver::createDecision(
         'field',
         PrivacyMode::BlurClick,
         isAuthorized: true,
@@ -503,7 +513,7 @@ it('audit is only logged when canRevealInteractively is true', function () {
     // 1. privacy_audit_reveal is true
     // 2. canRevealInteractively is true
 
-    $decision = \Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver::createDecision(
+    $decision = PrivacyDecisionResolver::createDecision(
         'audit_field',
         PrivacyMode::BlurClick,
         isAuthorized: true,
@@ -529,7 +539,7 @@ it('blur_auth mode: authorized users see plain text, unauthorized see blur', fun
     $authorizedUser->id = 1;
     Auth::login($authorizedUser);
 
-    $authDecision = \Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver::createDecision(
+    $authDecision = PrivacyDecisionResolver::createDecision(
         'field',
         PrivacyMode::BlurAuth,
         isAuthorized: true,
@@ -548,7 +558,7 @@ it('blur_auth mode: authorized users see plain text, unauthorized see blur', fun
     $unauthUser->id = 2;
     Auth::login($unauthUser);
 
-    $unauthDecision = \Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver::createDecision(
+    $unauthDecision = PrivacyDecisionResolver::createDecision(
         'field',
         PrivacyMode::BlurAuth,
         isAuthorized: false,
@@ -572,7 +582,7 @@ it('blur_click mode: authorized users can click to reveal', function () {
     $user->id = 1;
     Auth::login($user);
 
-    $decision = \Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver::createDecision(
+    $decision = PrivacyDecisionResolver::createDecision(
         'field',
         PrivacyMode::BlurClick,
         isAuthorized: true,
@@ -595,7 +605,7 @@ it('blur_click mode: unauthorized users cannot click to reveal', function () {
     $user->id = 1;
     Auth::login($user);
 
-    $decision = \Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver::createDecision(
+    $decision = PrivacyDecisionResolver::createDecision(
         'field',
         PrivacyMode::BlurClick,
         isAuthorized: false,
@@ -618,7 +628,7 @@ it('blur_hover mode: authorized users can hover to reveal', function () {
     $user->id = 1;
     Auth::login($user);
 
-    $decision = \Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver::createDecision(
+    $decision = PrivacyDecisionResolver::createDecision(
         'field',
         PrivacyMode::BlurHover,
         isAuthorized: true,
@@ -634,7 +644,7 @@ it('blur_hover mode: authorized users can hover to reveal', function () {
 });
 
 it('mask mode: data is masked for unauthorized users', function () {
-    $decision = \Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver::createDecision(
+    $decision = PrivacyDecisionResolver::createDecision(
         'email',
         PrivacyMode::Mask,
         isAuthorized: false,
@@ -657,7 +667,7 @@ it('mask mode: authorized users see plain text', function () {
     $user->id = 1;
     Auth::login($user);
 
-    $decision = \Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver::createDecision(
+    $decision = PrivacyDecisionResolver::createDecision(
         'email',
         PrivacyMode::Mask,
         isAuthorized: true,
@@ -679,7 +689,7 @@ it('hybrid mode: shows masked text even to authorized users', function () {
     $user->id = 1;
     Auth::login($user);
 
-    $decision = \Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver::createDecision(
+    $decision = PrivacyDecisionResolver::createDecision(
         'field',
         PrivacyMode::Hybrid,
         isAuthorized: true,
@@ -695,7 +705,7 @@ it('hybrid mode: shows masked text even to authorized users', function () {
 });
 
 it('hybrid mode: unauthorized users see masked + blurred', function () {
-    $decision = \Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver::createDecision(
+    $decision = PrivacyDecisionResolver::createDecision(
         'field',
         PrivacyMode::Hybrid,
         isAuthorized: false,
@@ -711,7 +721,7 @@ it('hybrid mode: unauthorized users see masked + blurred', function () {
 });
 
 it('disabled mode: no privacy effect applied', function () {
-    $decision = \Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver::createDecision(
+    $decision = PrivacyDecisionResolver::createDecision(
         'field',
         PrivacyMode::Disabled,
         isAuthorized: false,
@@ -732,7 +742,7 @@ it('disabled mode: no privacy effect applied', function () {
 it('plugin disabled state: no privacy attributes are rendered', function () {
     // When plugin is disabled at panel level, render hooks don't run
     // This tests the expected behavior
-    $plugin = \Arseno25\FilamentPrivacyBlur\FilamentPrivacyBlurPlugin::make()
+    $plugin = FilamentPrivacyBlurPlugin::make()
         ->enabled(false);
 
     expect($plugin->getIsEnabled())->toBeFalse();
@@ -746,7 +756,7 @@ it('except columns: fields in except list bypass privacy', function () {
     // Set config for this test
     config(['filament-privacy-blur.except_columns' => ['id', 'created_at']]);
 
-    $decision1 = \Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver::createDecision(
+    $decision1 = PrivacyDecisionResolver::createDecision(
         'id', // In except list
         PrivacyMode::BlurClick,
         isAuthorized: false, // Even unauthorized
@@ -757,7 +767,7 @@ it('except columns: fields in except list bypass privacy', function () {
         neverReveal: false
     );
 
-    $decision2 = \Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver::createDecision(
+    $decision2 = PrivacyDecisionResolver::createDecision(
         'email', // NOT in except list
         PrivacyMode::BlurClick,
         isAuthorized: false,
@@ -775,7 +785,7 @@ it('except columns: fields in except list bypass privacy', function () {
 it('except resources: resources in except list bypass privacy', function () {
     config(['filament-privacy-blur.except_resources' => ['App\\Filament\\Resources\\PublicResource']]);
 
-    $decision1 = \Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver::createDecision(
+    $decision1 = PrivacyDecisionResolver::createDecision(
         'field',
         PrivacyMode::BlurClick,
         isAuthorized: false,
@@ -786,7 +796,7 @@ it('except resources: resources in except list bypass privacy', function () {
         neverReveal: false
     );
 
-    $decision2 = \Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver::createDecision(
+    $decision2 = PrivacyDecisionResolver::createDecision(
         'field',
         PrivacyMode::BlurClick,
         isAuthorized: false,
@@ -816,7 +826,7 @@ it('except panels: panels in except list bypass privacy', function () {
 // ============================================================================
 
 it('export context automatically applies masking instead of blur', function () {
-    $isExport = \Arseno25\FilamentPrivacyBlur\Filament\ColumnPrivacyMacros::isExportContext();
+    $isExport = ColumnPrivacyMacros::isExportContext();
 
     // In export context, blur modes should fallback to masking
     // This is tested via ColumnPrivacyMacros::applyMasking()
@@ -824,7 +834,7 @@ it('export context automatically applies masking instead of blur', function () {
 });
 
 it('export with mask strategy uses correct masking', function () {
-    $service = app(\Arseno25\FilamentPrivacyBlur\Services\PrivacyMaskingService::class);
+    $service = app(PrivacyMaskingService::class);
 
     // Test various masking strategies work correctly in export
     expect($service->mask('email', 'user@example.com'))->toBe('u**r@example.com');
