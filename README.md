@@ -1,44 +1,71 @@
-<h1 align="center">🔐 Filament Privacy Blur</h1>
+<h1 align="center">
+  <img src="https://banners.beyondco.de/Filament%20Privacy%20Blur.png" alt="Filament Privacy Blur">
+</h1>
 
 <p align="center">
-  <a href="https://packagist.org/packages/arseno25/filament-privacy-blur">
-    <img src="https://img.shields.io/packagist/v/arseno25/filament-privacy-blur.svg?style=flat-square" alt="Latest Version on Packagist">
+  <a href="https://github.com/arseno25/filament-privacy-blur/releases">
+    <img src="https://img.shields.io/github/v/release/arseno25/filament-privacy-blur?style=flat-square" alt="Latest Release">
   </a>
   <a href="https://packagist.org/packages/arseno25/filament-privacy-blur">
-    <img src="https://img.shields.io/packagist/dt/arseno25/filament-privacy-blur.svg?style=flat-square" alt="Total Downloads">
+    <img src="https://img.shields.io/packagist/dt/arseno25/filament-privacy-blur?style=flat-square" alt="Total Downloads">
   </a>
   <a href="https://github.com/arseno25/filament-privacy-blur/blob/main/LICENSE.md">
-    <img src="https://img.shields.io/packagist/l/arseno25/filament-privacy-blur.svg?style=flat-square" alt="License">
+    <img src="https://img.shields.io/github/license/arseno25/filament-privacy-blur?style=flat-square" alt="License">
   </a>
 </p>
 
-<p align="center">
-  A Filament plugin for <strong>v4.x and v5.x</strong> that provides visual privacy protection for sensitive data. Apply blur and masking effects to table columns, form inputs, and infolist entries to prevent accidental exposure during screen sharing or shoulder surfing. 👁️
-</p>
+## About
 
-## ✨ Features
+**Filament Privacy Blur** provides visual privacy protection for sensitive data in Filament admin panels. It helps prevent accidental exposure during screen sharing, shoulder surfing, or working in public spaces.
 
-- **🔒 Visual Blur Protection** — CSS-based blur prevents casual observation during screen shares
-- **👆 Click to Reveal** — Click a blurred field to temporarily reveal it (auto re-blurs after 5 seconds)
-- **🖱️ Hover to Reveal** — Quick-peek by hovering your mouse over the field
-- **👁️ Global Reveal Toggle** — An eye icon in the topbar lets authorized users reveal all blurred fields instantly
-- **🎭 Data Masking** — Built-in mask strategies for email, phone, NIK, full name, API key, address, and generic text
-- **📝 Form Input Protection** — Apply blur to `TextInput`, `Textarea`, and other form fields (auto-clears on focus)
-- **🔐 Authorization-First** — Control who can reveal data using Laravel Gates, Policies, Filament Shield, or custom closures
-- **📊 Audit Logging** — Track which user revealed which field, with IP address, user agent, and timestamp
-- **📤 Export Safety** — Automatically masks blurred data during Filament exports
-- **🏢 Multi-Tenant Support** — Captures tenant context for audit logs in multi-tenant applications
+### What It Does
 
-## 📋 Requirements
+- **Visual Blur** — CSS-based blur that requires user interaction to reveal
+- **Data Masking** — Server-side redaction using configurable strategies (email, phone, NIK, etc.)
+- **Interactive Reveal** — Click-to-reveal or hover-to-reveal with automatic re-blur
+- **Global Reveal Toggle** — Eye icon in topbar to reveal all authorized fields instantly
+- **Authorization-First** — Full integration with Laravel Gates, Policies, and permissions
+- **Audit Logging** — Optional tracking of reveal actions with user, IP, and context
+- **Export Safety** — Automatic masking during Filament exports
+
+### What It Does NOT Do
+
+This is a **visual privacy layer only**. It does NOT provide:
+- Data encryption at rest or in transit
+- Backend access control or API-level data redaction
+- Database-level security
+- Protection against determined attackers with developer tools
+
+**Blur modes keep original data in the DOM.** For highly sensitive fields, use **mask mode** (server-side redaction) or implement data masking at your model/API layer.
+
+## Why This Package Exists
+
+When building Filament admin panels, you often need to display sensitive data (emails, salaries, phone numbers) while reducing the risk of accidental exposure during:
+- Screen sharing in meetings or presentations
+- Working in public spaces (cafes, coworking spaces)
+- Pair programming sessions
+- Client demonstrations
+
+This package provides a convenient, authorization-aware way to add visual privacy without manually implementing blur logic for every field.
+
+## Features
+
+- **🔒 7 Privacy Modes** — `blur`, `blur_click`, `blur_hover`, `blur_auth`, `mask`, `hybrid`, `disabled`
+- **👆 Interactive Reveal** — Click-to-reveal (auto re-blurs after 5s) or hover-to-reveal
+- **👁️ Global Reveal Toggle** — Topbar button to reveal all authorized fields instantly
+- **🎭 8 Mask Strategies** — email, phone, NIK, full name, API key, address, currency, generic
+- **🛡️ Authorization-First** — Secure-by-default using Laravel Gates, Policies, and abilities
+- **📊 Audit Logging** — Track reveal actions with user, IP address, user agent, and resource context
+- **📤 Export Safety** — Automatic masking during Filament exports
+- **🎛️ Per-Panel Config** — Exclude specific panels or customize settings per panel
+
+## Requirements
 
 - **PHP**: 8.2 or higher
 - **Laravel**: 11 or higher
 - **Filament**: v4.x or v5.x
-- **Alpine.js**: Bundled with Filament
 
-## 🚀 Installation
-
-Install the package via Composer:
+## Installation
 
 ```bash
 composer require arseno25/filament-privacy-blur
@@ -57,7 +84,7 @@ php artisan vendor:publish --tag="filament-privacy-blur-migrations"
 php artisan migrate
 ```
 
-## ⚙️ Setup
+## Setup
 
 Register the plugin in your Filament panel provider:
 
@@ -72,90 +99,73 @@ public function panel(Panel $panel): Panel
                 ->defaultMode('blur_click')
                 ->blurAmount(4)
                 ->exceptColumns(['id', 'created_at', 'updated_at'])
-                ->exceptPanels(['public']) // Optional: exclude specific panels
+                ->exceptPanels(['public'])
                 ->enableAudit()
         );
 }
 ```
 
-## 💡 Usage
+### Plugin Configuration Options
 
-### 📊 Table Columns
+| Method | Description | Default |
+|--------|-------------|---------|
+| `defaultMode(string $mode)` | Default privacy mode | `blur_click` |
+| `blurAmount(int $amount)` | CSS blur intensity (1-10) | `4` |
+| `exceptColumns(array $columns)` | Columns to exclude from privacy | `[]` |
+| `exceptResources(array $resources)` | Resource classes to exclude | `[]` |
+| `exceptPanels(array $panels)` | Panel IDs to exclude | `[]` |
+| `enableAudit()` | Enable audit logging | disabled |
+| `showGlobalRevealToggle()` | Show global reveal toggle | enabled |
+| `hideGlobalRevealToggle()` | Hide global reveal toggle | - |
+
+## Quick Start
+
+### Blur a Table Column
 
 ```php
 use Filament\Tables\Columns\TextColumn;
 
-// Click to reveal (default)
-TextColumn::make('email')
-    ->private()
-    ->revealOnClick(),
+TextColumn::make('email')->private(),
+```
 
-// Mask email: j***e@example.com
+### Mask a Table Column
+
+```php
 TextColumn::make('email')
     ->private()
     ->privacyMode('mask')
     ->maskUsing('email'),
-
-// Mask phone: 0812****7890
-TextColumn::make('phone')
-    ->private()
-    ->privacyMode('mask')
-    ->maskUsing('phone'),
-
-// Custom masking via Closure
-TextColumn::make('account_number')
-    ->private()
-    ->privacyMode('mask')
-    ->maskUsing(fn (string $state) => substr($state, 0, 4) . ' **** ****'),
-
-// Hover to reveal
-TextColumn::make('address')
-    ->private()
-    ->revealOnHover(),
-
-// Custom blur intensity
-TextColumn::make('salary')
-    ->money('IDR')
-    ->private()
-    ->blurAmount(6),
 ```
 
-### 📝 Form Inputs
+### Reveal with Authorization
+
+```php
+TextColumn::make('salary')
+    ->private()
+    ->revealIfCan('view_sensitive_data'),
+```
+
+### Protect Form Inputs
 
 ```php
 use Filament\Forms\Components\TextInput;
 
-// Blurred until the user focuses the input
 TextInput::make('email')->private(),
-
-TextInput::make('salary')
-    ->numeric()
-    ->prefix('Rp')
-    ->private(),
 ```
 
-### 📋 Infolist Entries
+### Protect Infolist Entries
 
 ```php
 use Filament\Infolists\Components\TextEntry;
 
-// Click to reveal
-TextEntry::make('email')
-    ->private()
-    ->revealOnClick(),
-
-// Mask with custom strategy
 TextEntry::make('phone')
     ->private()
-    ->privacyMode('mask')
     ->maskUsing('phone'),
+```
 
-// With authorization (recommended)
-TextEntry::make('ssn')
-    ->private()
-    ->revealIfCan('view_sensitive_ssn'),
+### Never Reveal (Maximum Security)
 
-// Never reveal (maximum security)
+```php
 TextEntry::make('api_key')
     ->private()
     ->revealNever()
@@ -163,298 +173,611 @@ TextEntry::make('api_key')
     ->maskUsing('api_key'),
 ```
 
-## 🔐 Authorization
+## How It Works
 
-### Ability-First Approach (Recommended)
+The package makes privacy decisions server-side and renders HTML data attributes that guide frontend behavior:
 
-The plugin uses Laravel's built-in authorization system as its primary mechanism:
+- **Server-side decisions** — Authorization, mode, and reveal capability are determined server-side
+- **Client-side execution** — Alpine.js respects server-rendered attributes and cannot override them
+- **Secure-by-default** — Fields with `->private()` but no explicit authorization will blur for everyone and allow NO reveal
+- **Blur vs Mask** — Blur modes keep original data in DOM (hidden by CSS), mask modes replace data server-side
+
+## Authorization
+
+This package is **ability-first** — it prioritizes Laravel's built-in authorization system.
+
+### Recommended: Ability-Based Authorization
+
+Use `revealIfCan()` with Laravel Gates or Policies:
 
 ```php
-// Using a Laravel Gate or Policy ability (recommended)
+// Using a Gate ability
+Gate::define('view_ssn', function ($user, $record) {
+    return $user->isAdmin() || $user->id === $record->user_id;
+});
+
 TextColumn::make('ssn')
     ->private()
-    ->revealIfCan('view_sensitive_ssn'),
-
-// Using a Model Policy
-TextColumn::make('notes')
-    ->private()
-    ->revealIfCan('view', $record),
-
-// Custom closure for complex logic
-TextColumn::make('salary')
-    ->private()
-    ->authorizeRevealUsing(fn ($user, $record) =>
-        $user?->is_admin || $record?->department_id === $user?->department_id
-    ),
+    ->revealIfCan('view_ssn', $record),
 ```
 
-### Package Compatibility
+### Custom Closure Authorization
 
-| Package | Status |
-|---------|--------|
-| **Filament Shield** | ✅ Works naturally via Laravel's Gate integration |
-| **Spatie Laravel Permission** | ✅ Works via `can()` method |
-| **Custom Auth Systems** | ✅ Use `authorizeRevealUsing()` for full control |
+```php
+TextColumn::make('salary')
+    ->private()
+    ->authorizeRevealUsing(function ($user, $record) {
+        return $user?->is_admin
+            || $user?->department_id === $record?->department_id;
+    }),
+```
 
-### Authorization Methods Summary
-
-| Method | Description | Priority |
-|--------|-------------|----------|
-| `revealIfCan($ability)` | Laravel Gate/Policy ability (recommended) | 1 (Primary) |
-| `authorizeRevealWith($ability)` | Same as revealIfCan | 1 |
-| `authorizeRevealUsing(Closure)` | Custom closure with full context | 1 |
-| `permission($perm)` | Single permission via `can()` | 2 |
-| `visibleToPermissions([$a, $b])` | Multiple permissions (any match) | 3 |
-| `visibleToRoles(['admin'])` | Role helper (optional, degrades gracefully) | 4 |
-
-### Role Helpers (Optional)
-
-Role helpers are convenience APIs that degrade gracefully if role methods don't exist:
+### Permission-Based Authorization
 
 ```php
 // Single permission
-TextColumn::make('data')
-    ->private()
-    ->permission('view_data'),
+TextColumn::make('data')->private()->permission('view_data'),
 
 // Multiple permissions (any match)
 TextColumn::make('admin_field')
     ->private()
     ->visibleToPermissions(['view_admin', 'edit_admin']),
-
-// Roles (convenience, optional)
-TextColumn::make('secret')
-    ->private()
-    ->visibleToRoles(['admin']),
-
-// Force blur for specific roles (always see blur, cannot reveal)
-TextColumn::make('internal')
-    ->private()
-    ->hiddenFromRoles(['guest', 'customer']),
 ```
 
-> **Important:** Roles are convenience helpers only. The core safety mechanism relies on Laravel's Gate/Policy system. Projects without role methods will still be secure.
-
-## 🎨 Privacy Modes
-
-### Mode Overview
-
-| Mode | Description |
-|------|-------------|
-| `blur` | 🔒 Always blurred, cannot be revealed |
-| `mask` | 🎭 Data is masked server-side (e.g., `j***e@example.com`) |
-| `blur_hover` | 🖱️ Blurred, reveals on hover |
-| `blur_click` | 👆 Blurred, reveals on click (auto re-blurs after 5s) |
-| `blur_auth` | 🛡️ Blurred, only authorized users can reveal interactively |
-| `hybrid` | 🔐 Both blur + mask for maximum protection |
-| `disabled` | ⚪ Privacy disabled for this field |
-
-### Mode Behavior Matrix
-
-| Mode | Authorized User | Unauthorized User | `revealNever()` |
-|------|----------------|-------------------|-----------------|
-| `disabled` | 👁️ Plain text | 👁️ Plain text | Plain text |
-| `blur` | 👁️ Plain text | 🔒 Blurred, no reveal | Blurred, no reveal |
-| `mask` | 👁️ Plain text | 🎭 Masked text | Masked text |
-| `blur_hover` | 🔒 Blur, hover reveals | 🔒 Blurred, no hover | Blurred, no hover |
-| `blur_click` | 🔒 Blur, click reveals | 🔒 Blurred, no click | Blurred, no click |
-| `blur_auth` | 👁️ Plain text | 🔒 Blurred, no reveal | Blurred, no reveal |
-| `hybrid` | 🎭 Masked text | 🎭 Masked + blurred | Masked + blurred |
-
-### Advanced Mode Examples
+### Role-Based Authorization (Optional)
 
 ```php
-use Filament\Tables\Columns\TextColumn;
+// Single role
+TextColumn::make('secret')->private()->visibleToRoles(['admin']),
 
-// blur_auth - Only authorized users can see clearly
+// Multiple roles
+TextColumn::make('internal')
+    ->private()
+    ->visibleToRoles(['admin', 'manager']),
+```
+
+### Force Blur for Specific Roles
+
+```php
+TextColumn::make('internal_notes')
+    ->private()
+    ->revealIfCan('view_internal')
+    ->hiddenFromRoles(['guest', 'contractor']),
+```
+
+Users in these roles will always see blur, even if authorized via other means.
+
+### Secure-by-Default in Practice
+
+```php
+// ❌ This will blur for EVERYONE, NO reveal allowed
+TextColumn::make('email')->private()
+
+// ✅ Only admins can reveal
+TextColumn::make('email')
+    ->private()
+    ->visibleToRoles(['admin'])
+
+// ✅ Users with 'view_email' permission can reveal
+TextColumn::make('email')
+    ->private()
+    ->permission('view_email')
+```
+
+## Privacy Modes
+
+### `blur` — Always Blurred
+
+- **Authorized**: Plain text
+- **Unauthorized**: 🔒 Blurred, no reveal
+- **Raw data in DOM**: Yes
+
+```php
+TextColumn::make('notes')->private()->privacyMode('blur'),
+```
+
+### `blur_click` — Click to Reveal (Default)
+
+- **Authorized**: 🔒 Blurred, click to reveal (auto re-blurs after 5s)
+- **Unauthorized**: 🔒 Blurred, no click
+- **Raw data in DOM**: Yes
+
+```php
+TextColumn::make('email')->private()->privacyMode('blur_click'),
+```
+
+### `blur_hover` — Hover to Reveal
+
+- **Authorized**: 🔒 Blurred, hover to reveal
+- **Unauthorized**: 🔒 Blurred, no hover
+- **Raw data in DOM**: Yes
+
+```php
+TextColumn::make('address')->private()->revealOnHover(),
+```
+
+### `blur_auth` — Blur for Unauthorized Only
+
+- **Authorized**: Plain text
+- **Unauthorized**: 🔒 Blurred, no reveal
+- **Raw data in DOM**: Yes
+
+```php
 TextColumn::make('internal_notes')
     ->private()
     ->privacyMode('blur_auth')
     ->revealIfCan('view_internal'),
+```
 
-// hybrid - Maximum protection for highly sensitive data
+### `mask` — Server-Side Masking
+
+- **Authorized**: Plain text
+- **Unauthorized**: 🎭 Masked text (e.g., `j***e@example.com`)
+- **Raw data in DOM**: No
+
+```php
+TextColumn::make('email')
+    ->private()
+    ->privacyMode('mask')
+    ->maskUsing('email'),
+```
+
+### `hybrid` — Maximum Protection
+
+- **Authorized**: 🎭 Masked text
+- **Unauthorized**: 🎭 Masked + 🔒 blurred
+- **Raw data in DOM**: Masked only
+
+```php
 TextColumn::make('ssn')
     ->private()
     ->privacyMode('hybrid')
-    ->revealIfCan('view_ssn')
-    ->revealNever(),
+    ->maskUsing('nik'),
 ```
 
-## 🎭 Mask Strategies
+### `disabled` — No Privacy
 
-| Strategy | Example Output |
-|----------|---------------|
-| `email` | `j***e@example.com` |
-| `phone` | `0812****7890` |
-| `nik` | `3173********9012` |
-| `full_name` | `Jo** Do*` |
-| `api_key` | `sk_***_key` |
-| `address` | `Jl. Sudirma***` |
-| `generic` | `J***h` |
+- **All users**: Plain text
+- **Privacy effect**: None
 
-## 📚 Available Methods
-
-### Enable Privacy
 ```php
-->private()              // Enable privacy with default settings
-->privacyMode('mask')    // Override privacy mode
+TextColumn::make('public_field')->private()->privacyMode('disabled'),
 ```
 
-### Convenience Aliases
+### Mode Behavior Table
+
+| Mode | Authorized | Unauthorized | Interactive Reveal | Global Reveal | Raw Data in DOM |
+|------|------------|--------------|-------------------|--------------|-----------------|
+| `disabled` | Plain | Plain | N/A | N/A | Yes |
+| `blur` | Plain | 🔒 Blur | No | No | Yes |
+| `blur_click` | 🔒 Blur → Click | 🔒 Blur | Yes (auth only) | Yes (auth only) | Yes |
+| `blur_hover` | 🔒 Blur → Hover | 🔒 Blur | Yes (auth only) | Yes (auth only) | Yes |
+| `blur_auth` | Plain | 🔒 Blur | No | No | Yes |
+| `mask` | Plain | 🎭 Masked | No | No | No |
+| `hybrid` | 🎭 Masked | 🎭 Masked + 🔒 Blur | No | No | Masked only |
+
+## Global Reveal Toggle
+
+The global reveal toggle appears as an eye icon button in the Filament topbar.
+
+### When Does the Toggle Appear?
+
+- **Shows**: When at least one field on the page can be globally revealed
+- **Hides**: When no globally revealable fields exist on the current page
+
+This happens automatically via Alpine.js — no configuration needed.
+
+### What Can Be Globally Revealed?
+
+The toggle can only reveal fields that:
+1. The current user is authorized to view (via `revealIfCan()`, `permission()`, etc.)
+2. The field is NOT marked as `revealNever()`
+3. The field is NOT in `hiddenFromRoles()` for the current user
+4. The privacy mode supports global reveal (`blur_click`, `blur_hover`)
+
+### What Cannot Be Globally Revealed?
+
+The toggle will NEVER reveal:
+- ❌ Unauthorized fields (user lacks ability/permission)
+- ❌ `revealNever()` fields
+- ❌ `mask` mode fields (masked server-side, no blur to remove)
+- ❌ `hybrid` mode fields
+- ❌ Fields where user is in `hiddenFromRoles()`
+
+### Security Guarantee
+
+The global reveal toggle **cannot bypass authorization**. Only fields where the server explicitly sets `data-privacy-can-globally-reveal="true"` will be revealed. The frontend Alpine.js code only respects server decisions.
+
+## Mask Strategies
+
+| Strategy | Example Output | Description |
+|----------|---------------|-------------|
+| `email` | `j***e@example.com` | Shows first char, masks middle, shows domain |
+| `phone` | `0812****7890` | Shows prefix, masks middle digits, shows suffix |
+| `nik` | `3173********9012` | Shows first 4 and last 4 digits |
+| `full_name` | `Jo** Do*` | Shows first 2 and last 2 chars of each word |
+| `api_key` | `sk_***_key` | Shows first 3 and last 3 chars |
+| `address` | `Jl. Sudirma***` | Shows first 12 characters |
+| `currency` | `***` | Masks currency values entirely |
+| `generic` | `J***h` | Shows first and last character |
+
+### Using Mask Strategies
+
 ```php
-->revealOnHover()        // Shortcut for privacyMode('blur_hover')
-->revealOnClick()        // Shortcut for privacyMode('blur_click')
-->revealNever()          // Shortcut for privacyMode('blur') with never-reveal flag
+// Built-in strategy
+TextColumn::make('email')->private()->maskUsing('email'),
+
+// Custom closure
+TextColumn::make('account_number')
+    ->private()
+    ->maskUsing(fn ($state) => substr($state, 0, 4) . ' ****'),
 ```
 
-### Appearance
+## Audit Logging
+
+When enabled, the package logs reveal actions to the `privacy_reveal_logs` table.
+
+### When Does Audit Logging Happen?
+
+Audit logging occurs when:
+1. Audit is enabled at plugin level (`->enableAudit()`)
+2. Audit is not disabled for the specific field (`->withoutAuditReveal()`)
+3. A reveal action is performed (click, hover, or global toggle)
+4. The user is authorized to perform the reveal
+
+### Stored Audit Fields
+
+| Field | Description |
+|-------|-------------|
+| `user_id` | ID of the user who revealed the data |
+| `tenant_id` | Tenant ID for multi-tenant apps |
+| `panel_id` | Filament panel ID |
+| `resource` | Resource identifier (e.g., `App\Filament\Resources\UserResource`) |
+| `page` | Full URL of the page where reveal occurred |
+| `column_name` | Name of the column that was revealed |
+| `record_key` | Primary key of the record |
+| `reveal_mode` | Privacy mode used (e.g., `blur_click`) |
+| `ip_address` | IP address of the user |
+| `user_agent` | Browser/user agent string |
+| `created_at` | Timestamp of the reveal action |
+
+### Enabling Audit Logging
+
 ```php
-->blurAmount(6)          // CSS blur intensity (1–10)
+FilamentPrivacyBlurPlugin::make()->enableAudit(),
 ```
 
-### Masking
+### Per-Field Audit Control
+
 ```php
-->maskUsing('email')     // Mask strategy or Closure
+// Disable audit for specific field
+TextColumn::make('public_field')
+    ->private()
+    ->withoutAuditReveal(),
 ```
 
-### Authorization (Ability-First - Recommended)
+## Export Safety
+
+### Why Visual Blur is Not Safe for Exports
+
+CSS blur only affects visual rendering in the browser. When exporting data to CSV/Excel, the original data is included unless explicitly masked.
+
+### How Export Context is Handled
+
+The package automatically detects Filament export contexts and:
+1. **Replaces blur with masking** — `blur_click` fields are masked using the configured strategy
+2. **Preserves mask strategies** — Custom masking strategies are applied during export
+3. **Protects sensitive data** — Original values are never included in exports
+
+### Export Behavior Examples
+
 ```php
-->revealIfCan($ability)                    // Laravel Gate/Policy ability (primary)
-->authorizeRevealWith($ability)          // Same as revealIfCan
-->authorizeRevealUsing(Closure)           // Custom closure
+// In browser: Shows blurred with click-to-reveal
+// In export: Shows as "j***e@example.com"
+TextColumn::make('email')->private()->maskUsing('email'),
+
+// In browser: Shows blurred with click-to-reveal
+// In export: Shows as "0812****7890"
+TextColumn::make('phone')->private()->maskUsing('phone'),
 ```
 
-### Authorization (Convenience)
+## Security Limitations
+
+### Important: What This Package Does NOT Provide
+
+1. **Not Encryption** — Blur modes keep original data in the DOM
+2. **Not Backend Access Control** — Does not replace API authentication
+3. **Not API-Level Redaction** — Does not protect JSON API endpoints
+4. **Not Database Security** — Does not encrypt data at rest
+
+### Recommended Usage by Data Sensitivity
+
+| Data Type | Recommended Mode | Reason |
+|-----------|-----------------|---------|
+| **Email** | `mask` or `blur_click` | Mask for high sensitivity, blur for medium |
+| **Phone** | `mask` or `blur_click` | Mask for high sensitivity, blur for medium |
+| **Salary** | `blur_click` with auth | Blur with strict authorization |
+| **SSN/Tax ID** | `mask` + `revealNever()` | Always mask, never reveal |
+| **API Keys** | `mask` + `revealNever()` | Maximum security |
+| **Internal Notes** | `blur_auth` with auth | Blur for unauthorized, clear for authorized |
+
+### For Highly Sensitive Data
+
+Consider implementing **backend data redaction**:
+- Mask data in model accessors
+- Use API resources with conditional field inclusion
+- Implement field-level encryption in your database
+- Use Laravel's `Hidden` attribute on Eloquent models
+
+## API Reference
+
+### Column/Entry/Field Macros
+
+#### `private()`
+
+Enable privacy with default settings (equivalent to `privacyMode('blur_click')`):
+
 ```php
-->visibleToRoles([$role])                  // Role-based (convenience)
-->visibleToPermissions([$perm])           // Multiple permissions (any match)
-->permission($perm)                        // Single permission
-->hiddenFromRoles([$role])                // These roles always see blur
+TextColumn::make('email')->private()
 ```
 
-### Audit
+#### `privacyMode(string $mode)`
+
+Set the privacy mode:
+
 ```php
-->auditReveal(true)      // Log reveal actions to database (default: true)
-->withoutAuditReveal()   // Disable audit for this field
+TextColumn::make('salary')
+    ->private()
+    ->privacyMode('blur_click'),
 ```
 
-## ⚙️ Configuration
+Available modes: `'blur'`, `'blur_click'`, `'blur_hover'`, `'blur_auth'`, `'mask'`, `'hybrid'`, `'disabled'`
+
+#### `revealOnClick()` / `revealOnHover()`
+
+Convenience methods for common modes:
+
+```php
+TextColumn::make('email')->revealOnClick(),
+TextColumn::make('address')->revealOnHover(),
+```
+
+#### `revealNever()`
+
+Prevent all reveal methods:
+
+```php
+TextColumn::make('api_key')->private()->revealNever(),
+```
+
+#### `blurAmount(int $amount)`
+
+Set CSS blur intensity (1-10):
+
+```php
+TextColumn::make('salary')->private()->blurAmount(8),
+```
+
+#### `maskUsing(string|Closure $strategy)`
+
+Set masking strategy:
+
+```php
+TextColumn::make('email')->private()->maskUsing('email'),
+TextColumn::make('custom')->private()->maskUsing(fn ($s) => $s[0] . '***'),
+```
+
+### Authorization Methods
+
+#### `revealIfCan(string $ability, Model $record = null)`
+
+Authorize via Laravel Gate or Policy (recommended):
+
+```php
+TextColumn::make('ssn')->private()->revealIfCan('view_ssn', $record),
+```
+
+#### `authorizeRevealWith(string $ability, Model $record = null)`
+
+Alias for `revealIfCan()` with explicit semantics:
+
+```php
+TextColumn::make('notes')->private()->authorizeRevealWith('view_notes', $record),
+```
+
+#### `authorizeRevealUsing(Closure $callback)`
+
+Custom authorization closure:
+
+```php
+TextColumn::make('salary')
+    ->private()
+    ->authorizeRevealUsing(fn ($user, $record) => $user?->id === $record->manager_id),
+```
+
+#### `permission(string $permission)`
+
+Require specific permission:
+
+```php
+TextColumn::make('data')->private()->permission('view_data'),
+```
+
+#### `visibleToPermissions(array $permissions)`
+
+Require any of the specified permissions:
+
+```php
+TextColumn::make('admin_field')
+    ->private()
+    ->visibleToPermissions(['view_admin', 'edit_admin']),
+```
+
+#### `visibleToRoles(array $roles)`
+
+Require any of the specified roles:
+
+```php
+TextColumn::make('secret')->private()->visibleToRoles(['admin']),
+```
+
+#### `hiddenFromRoles(array $roles)`
+
+Force blur for specific roles:
+
+```php
+TextColumn::make('internal')->private()->hiddenFromRoles(['guest']),
+```
+
+### Audit Methods
+
+#### `auditReveal(bool $enabled = true)`
+
+Enable audit for this field:
+
+```php
+TextColumn::make('salary')->private()->auditReveal(true),
+```
+
+#### `withoutAuditReveal()`
+
+Disable audit for this field:
+
+```php
+TextColumn::make('public_field')->private()->withoutAuditReveal(),
+```
+
+### Plugin Configuration Methods
+
+#### `defaultMode(string $mode)`
+
+Set default privacy mode:
+
+```php
+FilamentPrivacyBlurPlugin::make()->defaultMode('blur_click'),
+```
+
+#### `blurAmount(int $amount)`
+
+Set default blur intensity:
+
+```php
+FilamentPrivacyBlurPlugin::make()->blurAmount(6),
+```
+
+#### `exceptColumns(array $columns)`
+
+Exclude specific columns:
+
+```php
+FilamentPrivacyBlurPlugin::make()->exceptColumns(['id', 'created_at']),
+```
+
+#### `exceptResources(array $resources)`
+
+Exclude specific resources:
+
+```php
+FilamentPrivacyBlurPlugin::make()->exceptResources([App\Filament\Resources\PublicResource::class]),
+```
+
+#### `exceptPanels(array $panels)`
+
+Exclude specific panels:
+
+```php
+FilamentPrivacyBlurPlugin::make()->exceptPanels(['public', 'reports']),
+```
+
+#### `enableAudit()`
+
+Enable audit logging globally:
+
+```php
+FilamentPrivacyBlurPlugin::make()->enableAudit(),
+```
+
+#### `showGlobalRevealToggle()` / `hideGlobalRevealToggle()`
+
+Control toggle visibility:
+
+```php
+FilamentPrivacyBlurPlugin::make()->showGlobalRevealToggle(),
+FilamentPrivacyBlurPlugin::make()->hideGlobalRevealToggle(),
+```
+
+## Configuration
 
 After publishing, edit `config/filament-privacy-blur.php`:
 
 ```php
 return [
-    'default_mode'          => 'blur_click',
-    'default_blur_amount'   => 4,
+    'default_mode' => 'blur_click',
+    'default_blur_amount' => 4,
     'default_mask_strategy' => 'generic',
-    'except_columns'        => ['id', 'created_at', 'updated_at'],
-    'except_resources'      => [],
-    'except_panels'         => [],
-    'audit_enabled'         => false,
-    'icon_trigger_enabled'  => true,
+    'except_columns' => ['id', 'created_at', 'updated_at'],
+    'except_resources' => [],
+    'except_panels' => [],
+    'audit_enabled' => false,
+    'icon_trigger_enabled' => true,
 ];
 ```
 
-## 📊 Audit Logging
-
-When enabled, reveal actions are logged to the `privacy_reveal_logs` table with:
-
-| Field | Description |
-|-------|-------------|
-| `user_id` | ID of the user who revealed the data |
-| `column_name` | Name of the column that was revealed |
-| `record_key` | Primary key of the record |
-| `reveal_mode` | Privacy mode used (e.g., `blur_click`, `blur_hover`) |
-| `ip_address` | IP address of the user |
-| `user_agent` | Browser/user agent string |
-| `panel_id` | Filament panel ID (for multi-panel apps) |
-| `resource` | Resource identifier (e.g., UserResource) |
-| `tenant_id` | Tenant ID (for multi-tenant apps) |
-
-> **💡 Multi-Tenant Support:** The plugin automatically captures tenant context when using `stancl/tenancy` or similar packages.
-
-## ⚠️ Security Notice
-
-> **This plugin provides a visual privacy layer only.** It is designed to prevent casual observation (shoulder surfing, screen sharing) and is **not** a substitute for:
->
-> - Backend data encryption
-> - Proper access control
-> - API-level data redaction
->
-> Blur modes keep the original data in the DOM. For highly sensitive fields, use `mask` or `hybrid` mode, or implement data redaction at the model/API layer.
-
-### Secure by Default
-
-> **Breaking Notice:** This plugin is **secure by default**. Fields with `->private()` but **no explicit authorization method** (like `visibleToRoles()`, `permission()`, `revealIfCan()`, etc.) will **NOT allow reveal** for any user.
->
-> You must explicitly specify who can reveal the data:
->
-> ```php
-> // This will blur for everyone, NO reveal allowed
-> TextColumn::make('email')->private()
->
-> // Only admins can reveal
-> TextColumn::make('email')->private()->visibleToRoles(['admin'])
->
-> // Users with 'view_email' permission can reveal
-> TextColumn::make('email')->private()->permission('view_email')
-> ```
-
-### Global Reveal Toggle
-
-The global reveal toggle (eye icon in topbar) only reveals fields that:
-1. The current user is authorized to view (via `revealIfCan()`, `permission()`, etc.)
-2. The field is not marked as `revealNever()`
-3. The field is not in `hiddenFromRoles()` for the current user
-
-The toggle automatically hides itself when there are no globally revealable fields on the current page, providing a cleaner user interface.
-
-You can control the toggle visibility using:
-- `showGlobalRevealToggle()` - Show the toggle (default)
-- `hideGlobalRevealToggle()` - Hide the toggle entirely
-
-This ensures that global reveal cannot bypass any authorization rules.
-
-## 🧪 Compatibility
+## Compatibility
 
 | Component | Supported Versions |
 |-----------|-------------------|
 | **PHP** | 8.2, 8.3, 8.4 |
 | **Laravel** | 11, 12 |
 | **Filament** | v4.x, v5.x |
-| **Filament Shield** | ✅ Compatible via Laravel Gates |
-| **Spatie Permission** | ✅ Compatible via `can()` method |
+| **Alpine.js** | Bundled with Filament |
 
-## 📝 Changelog
+### Package Integration
 
-Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
+| Package | Status | Notes |
+|---------|--------|-------|
+| **Filament Shield** | ✅ Compatible | Works via Laravel Gates |
+| **Spatie Laravel Permission** | ✅ Compatible | Works via `can()` method |
+| **Spatie Tenancy** | ✅ Compatible | Tenant ID captured in audit logs |
 
-## 🤝 Contributing
+## Contributing
 
-Thank you for considering contributing to Filament Privacy Blur!
-
-### Development Setup
-
-1. **Fork the repository**
-2. **Clone your fork**
-3. **Install dependencies**
+1. **Install dependencies**:
    ```bash
    composer install
    ```
-4. **Run the test suite**
+
+2. **Run tests**:
    ```bash
    composer test
+   ```
+
+3. **Run static analysis**:
+   ```bash
    composer analyse
+   ```
+
+4. **Run code style checks**:
+   ```bash
    composer test:lint
    ```
 
-### Coding Standards
+5. **Fix code style**:
+   ```bash
+   composer lint
+   ```
 
-- **PHPStan** - Static analysis at level 4
-- **Pint** - Laravel code style fixer
-- **Pest** - Testing framework
+### Development Standards
 
-## 📜 License
+- **PHPStan** — Static analysis at Level 4
+- **Laravel Pint** — Laravel code style fixer
+- **Pest** — Testing framework
+
+## Changelog
+
+Please see [CHANGELOG](CHANGELOG.md) for recent changes.
+
+## License
 
 The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
 
