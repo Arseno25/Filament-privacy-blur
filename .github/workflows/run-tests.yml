@@ -66,12 +66,15 @@ jobs:
           echo "::add-matcher::${{ runner.tool_cache }}/phpunit.json"
 
       - name: Install dependencies
+        working-directory: packages/Filament-privacy-blur-plugin
         run: |
           composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" "filament/filament:${{ matrix.filament }}" --no-interaction --no-update
           composer update --prefer-dist --no-interaction --no-scripts
 
       - name: List Installed Dependencies
+        working-directory: packages/Filament-privacy-blur-plugin
         run: composer show -D
 
       - name: Execute tests
+        working-directory: packages/Filament-privacy-blur-plugin
         run: vendor/bin/pest --ci
