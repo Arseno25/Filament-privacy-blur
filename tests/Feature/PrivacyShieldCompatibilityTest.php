@@ -85,8 +85,10 @@ it('Shield abilities work with policy methods via can()', function () {
     $user->id = 1;
     Auth::login($user);
 
-    $record = new class extends Model {
+    $record = new class extends Model
+    {
         protected $fillable = ['owner_id'];
+
         public $owner_id = 1;
     };
 
