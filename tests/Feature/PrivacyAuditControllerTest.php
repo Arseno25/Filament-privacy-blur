@@ -1,7 +1,6 @@
 <?php
 
 use Arseno25\FilamentPrivacyBlur\Models\PrivacyRevealLog;
-use Arseno25\FilamentPrivacyBlur\Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 

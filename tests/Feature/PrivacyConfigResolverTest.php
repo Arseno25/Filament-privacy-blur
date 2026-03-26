@@ -3,11 +3,9 @@
 use Arseno25\FilamentPrivacyBlur\Enums\PrivacyMode;
 use Arseno25\FilamentPrivacyBlur\FilamentPrivacyBlurPlugin;
 use Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyConfigResolver;
-use Arseno25\FilamentPrivacyBlur\Tests\TestCase;
 use Filament\Facades\Filament;
 use Filament\Panel;
 use Illuminate\Support\Facades\Config;
-
 
 it('resolves default mode from config', function () {
     Config::set('filament-privacy-blur.default_mode', 'blur_click');

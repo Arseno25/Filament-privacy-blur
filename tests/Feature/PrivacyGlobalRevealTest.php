@@ -2,9 +2,7 @@
 
 use Arseno25\FilamentPrivacyBlur\Enums\PrivacyMode;
 use Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver;
-use Arseno25\FilamentPrivacyBlur\Tests\TestCase;
 use Illuminate\Foundation\Auth\User;
-
 
 it('only reveals fields user is authorized for during global reveal', function () {
     // Test that decision resolver returns different results based on authorization
