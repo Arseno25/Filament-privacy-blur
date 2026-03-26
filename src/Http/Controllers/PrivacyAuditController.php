@@ -29,7 +29,9 @@ class PrivacyAuditController extends Controller
             recordKey: $validated['record_id'] ?? null,
             resource: $validated['resource'] ?? null,
             page: url()->previous(),
-            panel: $validated['panel'] ?? null
+            panel: $validated['panel'] ?? null,
+            ipAddress: $request->ip(),
+            userAgent: $request->userAgent()
         );
 
         return response()->json(['status' => 'success']);

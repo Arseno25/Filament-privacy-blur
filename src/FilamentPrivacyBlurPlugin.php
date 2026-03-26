@@ -45,7 +45,10 @@ class FilamentPrivacyBlurPlugin implements Plugin
             FilamentView::registerRenderHook(
                 PanelsRenderHook::GLOBAL_SEARCH_AFTER,
                 function (): string {
-                    // Only show toggle to users who are authorized to reveal
+                    // Only show toggle to users who are authorized to reveal at least one field.
+                    // With the new secure-by-default behavior, isAuthorized() without constraints
+                    // returns false, so the toggle only shows when fields have explicit authorization.
+                    // This is a security feature to prevent unauthorized global reveal.
                     $isAuthorized = PrivacyAuthorizationService::isAuthorized();
                     if (! $isAuthorized) {
                         return '';

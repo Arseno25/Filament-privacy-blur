@@ -4,12 +4,13 @@ use Arseno25\FilamentPrivacyBlur\Services\PrivacyAuthorizationService;
 use Illuminate\Foundation\Auth\User;
 use Illuminate\Support\Facades\Auth;
 
-it('returns true when no constraints are provided (no auth restriction)', function () {
+it('returns false when no constraints are provided (secure by default)', function () {
     $user = new User;
     $user->id = 1;
     Auth::login($user);
 
-    expect(PrivacyAuthorizationService::isAuthorized(null, null, null, null))->toBeTrue();
+    // Secure by default: no constraints = deny access
+    expect(PrivacyAuthorizationService::isAuthorized(null, null, null, null))->toBeFalse();
 });
 
 it('returns false when no user is authenticated', function () {
@@ -72,4 +73,13 @@ it('returns false when permissions are defined but user does not have them', fun
 
     // User can't resolve this permission via can() by default
     expect(PrivacyAuthorizationService::isAuthorized(permissions: ['view-sensitive-data']))->toBeFalse();
+});
+
+it('returns false when only policy is defined but gate does not exist', function () {
+    $user = new User;
+    $user->id = 1;
+    Auth::login($user);
+
+    // Policy defined but no gate exists, user->can() will return false
+    expect(PrivacyAuthorizationService::isAuthorized(policy: 'view-sensitive'))->toBeFalse();
 });

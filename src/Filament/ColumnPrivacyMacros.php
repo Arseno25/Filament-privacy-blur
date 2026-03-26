@@ -2,6 +2,7 @@
 
 namespace Arseno25\FilamentPrivacyBlur\Filament;
 
+use Arseno25\FilamentPrivacyBlur\DataTransferObjects\PrivacyDecision;
 use Arseno25\FilamentPrivacyBlur\Enums\PrivacyMode;
 use Arseno25\FilamentPrivacyBlur\Helpers\PrivacyMetadataHelper;
 use Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyConfigResolver;
@@ -39,27 +40,13 @@ class ColumnPrivacyMacros
                         // Attempt to resolve record from form context
                         $record = $this->getRecord();
 
-                        $decision = PrivacyDecisionResolver::resolveForColumn(
-                            $this->getName(),
-                            $meta['privacy_mode'] ?? null,
-                            PrivacyAuthorizationService::isAuthorized(
-                                roles: $meta['privacy_roles'] ?? null,
-                                permissions: $meta['privacy_permissions'] ?? null,
-                                policy: $meta['privacy_policy'] ?? null,
-                                customAuth: $meta['privacy_auth_closure'] ?? null,
-                                record: $record
-                            ),
-                            $meta['privacy_blur_amount'] ?? null,
-                            $record,
-                            $meta['privacy_hidden_roles'] ?? null,
-                            ColumnPrivacyMacros::resolveResourceClass($this)
-                        );
+                        $decision = ColumnPrivacyMacros::resolveDecisionForField($this, $record, $meta);
 
-                        if (! $decision['should_blur'] && ! $decision['should_mask']) {
+                        if (! $decision->hasPrivacyEffect()) {
                             return [];
                         }
 
-                        $blurAmount = $decision['blur_amount'];
+                        $blurAmount = $decision->blurAmount;
 
                         return [
                             'class' => "fi-privacy-blur fi-pb-{$blurAmount}",
@@ -86,70 +73,16 @@ class ColumnPrivacyMacros
                     $columnName = $this->getName();
                     $meta = PrivacyMetadataHelper::get($this);
 
-                    $overrideMode = isset($meta['privacy_mode']) && $meta['privacy_mode'] instanceof PrivacyMode
-                        ? $meta['privacy_mode']
-                        : null;
-
-                    $isAuthorized = PrivacyAuthorizationService::isAuthorized(
-                        roles: $meta['privacy_roles'] ?? null,
-                        permissions: $meta['privacy_permissions'] ?? null,
-                        policy: $meta['privacy_policy'] ?? null,
-                        customAuth: $meta['privacy_auth_closure'] ?? null,
-                        record: $record
-                    );
-
-                    $columnBlur = $meta['privacy_blur_amount'] ?? null;
-                    $hiddenRoles = $meta['privacy_hidden_roles'] ?? null;
-
-                    $decision = PrivacyDecisionResolver::resolveForColumn(
-                        $columnName,
-                        $overrideMode,
-                        $isAuthorized,
-                        $columnBlur,
-                        $record,
-                        $hiddenRoles,
-                        ColumnPrivacyMacros::resolveResourceClass($this)
-                    );
+                    $decision = ColumnPrivacyMacros::resolveDecisionForField($this, $record, $meta);
 
                     // Store decision in metadata for formatStateUsing to access
-                    PrivacyMetadataHelper::set($this, ['_last_decision' => $decision]);
+                    PrivacyMetadataHelper::set($this, ['_last_decision' => $decision->toLegacyArray()]);
 
-                    if (! $decision['should_blur'] && ! $decision['should_mask']) {
+                    if (! $decision->hasPrivacyEffect()) {
                         return [];
                     }
 
-                    $attributes = ['data-privacy-blur' => 'true'];
-
-                    if ($decision['should_blur']) {
-                        $mode = $decision['mode'];
-
-                        if ($decision['reveal_enabled']) {
-                            if ($mode === PrivacyMode::BlurClick) {
-                                $attributes['data-privacy-click'] = 'true';
-                                $attributes['title'] = 'Click to reveal';
-
-                                // Store audit data
-                                if ($meta['privacy_audit_reveal'] ?? false) {
-                                    $attributes['data-privacy-audit'] = 'true';
-                                    $attributes['data-privacy-column'] = $columnName;
-                                    $attributes['data-privacy-mode'] = $mode->value;
-                                    $recordId = $record ? $record->getKey() : '';
-                                    if ($recordId) {
-                                        $attributes['data-privacy-record-id'] = $recordId;
-                                    }
-                                    // Add panel context for audit
-                                    $panel = Filament::getCurrentPanel();
-                                    if ($panel) {
-                                        $attributes['data-privacy-panel'] = $panel->getId();
-                                    }
-                                }
-                            } elseif ($mode === PrivacyMode::BlurHover) {
-                                $attributes['data-privacy-hover'] = 'true';
-                            }
-                        }
-                    }
-
-                    return $attributes;
+                    return ColumnPrivacyMacros::buildPrivacyAttributes($decision, $columnName, $record, $meta, $this);
                 });
 
                 // Hook into format state for Table Columns and Infolist Entries
@@ -157,63 +90,39 @@ class ColumnPrivacyMacros
                 if (method_exists($this, 'formatStateUsing')) {
                     $this->formatStateUsing(function ($state, ?Model $record = null) {
                         /** @var Column|Entry $this */
-                        $columnName = $this->getName();
                         $meta = PrivacyMetadataHelper::get($this);
 
-                        $overrideMode = isset($meta['privacy_mode']) && $meta['privacy_mode'] instanceof PrivacyMode
-                            ? $meta['privacy_mode']
-                            : null;
-
-                        $isAuthorized = PrivacyAuthorizationService::isAuthorized(
-                            roles: $meta['privacy_roles'] ?? null,
-                            permissions: $meta['privacy_permissions'] ?? null,
-                            policy: $meta['privacy_policy'] ?? null,
-                            customAuth: $meta['privacy_auth_closure'] ?? null,
-                            record: $record
-                        );
-
-                        $columnBlur = $meta['privacy_blur_amount'] ?? null;
-                        $hiddenRoles = $meta['privacy_hidden_roles'] ?? null;
-
-                        $decision = PrivacyDecisionResolver::resolveForColumn(
-                            $columnName,
-                            $overrideMode,
-                            $isAuthorized,
-                            $columnBlur,
-                            $record,
-                            $hiddenRoles,
-                            ColumnPrivacyMacros::resolveResourceClass($this)
-                        );
+                        $decision = ColumnPrivacyMacros::resolveDecisionForField($this, $record, $meta);
 
                         // Handle masking first
-                        if ($decision['should_mask']) {
+                        if ($decision->shouldRenderMasked) {
                             return ColumnPrivacyMacros::applyMasking($state, $record, $meta['mask_strategy'] ?? null);
                         }
 
                         // Export context — apply masking instead of blur since blur is visual-only
-                        if ($decision['should_blur'] && ColumnPrivacyMacros::isExportContext()) {
+                        if ($decision->shouldBlur && ColumnPrivacyMacros::isExportContext()) {
                             return ColumnPrivacyMacros::applyMasking($state, $record, $meta['mask_strategy'] ?? null);
                         }
 
                         // Handle blur by wrapping in span with CSS classes
-                        if ($decision['should_blur']) {
-                            $mode = $decision['mode'];
-                            $blurAmount = $decision['blur_amount'];
+                        if ($decision->shouldBlur) {
+                            $mode = $decision->mode;
+                            $blurAmount = $decision->blurAmount;
                             $blurClass = "fi-privacy-blur fi-pb-{$blurAmount}";
 
-                            if ($decision['reveal_enabled']) {
+                            if ($decision->canRevealInteractively) {
                                 if ($mode === PrivacyMode::BlurClick) {
                                     // Click to reveal — data attributes are on the outer wrapper via extraAttributes
                                     return new HtmlString(
-                                        "<span class=\"{$blurClass} fi-text-transparent fi-cursor-pointer transition-all duration-300 select-none\">" .
-                                        e((string) $state) .
+                                        "<span class=\"{$blurClass} fi-text-transparent fi-cursor-pointer transition-all duration-300 select-none\">".
+                                        e((string) $state).
                                         '</span>'
                                     );
                                 } elseif ($mode === PrivacyMode::BlurHover) {
                                     // Hover to reveal
                                     return new HtmlString(
-                                        "<span class=\"{$blurClass} fi-hover fi-text-transparent transition-all duration-300 select-none\">" .
-                                        e((string) $state) .
+                                        "<span class=\"{$blurClass} fi-hover fi-text-transparent transition-all duration-300 select-none\">".
+                                        e((string) $state).
                                         '</span>'
                                     );
                                 }
@@ -221,8 +130,8 @@ class ColumnPrivacyMacros
 
                             // No reveal - always blurred
                             return new HtmlString(
-                                "<span class=\"{$blurClass} fi-text-transparent transition-all duration-300 select-none\">" .
-                                e((string) $state) .
+                                "<span class=\"{$blurClass} fi-text-transparent transition-all duration-300 select-none\">".
+                                e((string) $state).
                                 '</span>'
                             );
                         }
@@ -235,7 +144,7 @@ class ColumnPrivacyMacros
             },
 
             // Fluent API methods using PrivacyMetadataHelper
-            'privacyMode' => function (PrivacyMode | string $mode) {
+            'privacyMode' => function (PrivacyMode|string $mode) {
                 /** @var Column|Entry|Field $this */
                 if (is_string($mode)) {
                     $mode = PrivacyMode::from($mode);
@@ -244,7 +153,7 @@ class ColumnPrivacyMacros
                 return PrivacyMetadataHelper::set($this, ['privacy_mode' => $mode]);
             },
 
-            'maskUsing' => function (Closure | string $strategy) {
+            'maskUsing' => function (Closure|string $strategy) {
                 /** @var Column|Entry|Field $this */
                 return PrivacyMetadataHelper::set($this, ['mask_strategy' => $strategy]);
             },
@@ -271,7 +180,7 @@ class ColumnPrivacyMacros
 
             'permission' => function (string $permission) {
                 /** @var Column|Entry|Field $this */
-                return PrivacyMetadataHelper::set($this, ['privacy_permissions' => [$permission]]);
+                return PrivacyMetadataHelper::set($this, ['privacy_permission' => $permission]);
             },
 
             'authorizeUsing' => function (Closure $closure) {
@@ -282,6 +191,28 @@ class ColumnPrivacyMacros
             'authorizeRevealUsing' => function (Closure $closure) {
                 /** @var Column|Entry|Field $this */
                 return PrivacyMetadataHelper::set($this, ['privacy_auth_closure' => $closure]);
+            },
+
+            // NEW: Ability-first authorization methods (primary API)
+
+            'authorizeRevealWith' => function (string $ability, ?Model $record = null) {
+                /** @var Column|Entry|Field $this */
+                // Store the ability for Gate/Policy checks
+                return PrivacyMetadataHelper::set($this, [
+                    'privacy_ability' => $ability,
+                    'privacy_auth_record' => $record,
+                    'privacy_auth_method' => 'gate',
+                ]);
+            },
+
+            'revealIfCan' => function (string $ability, ?Model $record = null) {
+                /** @var Column|Entry|Field $this */
+                // Alias for authorizeRevealWith with clearer semantics
+                return PrivacyMetadataHelper::set($this, [
+                    'privacy_ability' => $ability,
+                    'privacy_auth_record' => $record,
+                    'privacy_auth_method' => 'gate',
+                ]);
             },
 
             'hiddenFromRoles' => function (array $roles) {
@@ -306,7 +237,10 @@ class ColumnPrivacyMacros
 
             'revealNever' => function () {
                 /** @var Column|Entry|Field $this */
-                return PrivacyMetadataHelper::set($this, ['privacy_mode' => PrivacyMode::Blur]);
+                return PrivacyMetadataHelper::set($this, [
+                    'privacy_mode' => PrivacyMode::Blur,
+                    'privacy_never_reveal' => true, // Flag to prevent any reveal
+                ]);
             },
 
             'auditReveal' => function (bool $condition = true) {
@@ -325,6 +259,104 @@ class ColumnPrivacyMacros
             Entry::macro($name, $closure);
             Field::macro($name, $closure);
         }
+    }
+
+    /**
+     * Resolve the privacy decision for a field (Column, Entry, or Field).
+     */
+    public static function resolveDecisionForField(
+        Column|Entry|Field $field,
+        ?Model $record,
+        array $meta
+    ): PrivacyDecision {
+        $overrideMode = isset($meta['privacy_mode']) && $meta['privacy_mode'] instanceof PrivacyMode
+            ? $meta['privacy_mode']
+            : null;
+
+        // Use new checkAuthorization method that respects priority order
+        $isAuthorized = PrivacyAuthorizationService::checkAuthorization($meta, $record);
+
+        $columnBlur = $meta['privacy_blur_amount'] ?? null;
+        $hiddenRoles = $meta['privacy_hidden_roles'] ?? null;
+        $neverReveal = $meta['privacy_never_reveal'] ?? false;
+        $resourceClass = self::resolveResourceClass($field);
+        $columnName = $field->getName();
+
+        return PrivacyDecisionResolver::createDecision(
+            $columnName,
+            $overrideMode,
+            $isAuthorized,
+            $columnBlur,
+            $record,
+            $hiddenRoles,
+            $resourceClass,
+            $neverReveal
+        );
+    }
+
+    /**
+     * Build the data attributes for privacy elements.
+     *
+     * @return array<string, string>
+     */
+    public static function buildPrivacyAttributes(
+        PrivacyDecision $decision,
+        string $columnName,
+        ?Model $record,
+        array $meta,
+        Column|Entry|Field $field
+    ): array {
+        $attributes = [
+            'data-privacy-enabled' => 'true',
+            'data-privacy-mode' => $decision->mode->value,
+            'data-privacy-can-reveal-interactively' => $decision->canRevealInteractively ? 'true' : 'false',
+            'data-privacy-can-globally-reveal' => $decision->canBeGloballyRevealed ? 'true' : 'false',
+            'data-privacy-never-reveal' => $decision->neverReveal ? 'true' : 'false',
+        ];
+
+        // Mode-specific attributes
+        if ($decision->shouldBlur && $decision->canRevealInteractively) {
+            if ($decision->mode === PrivacyMode::BlurClick) {
+                $attributes['data-privacy-click'] = 'true';
+                $attributes['title'] = 'Click to reveal';
+            } elseif ($decision->mode === PrivacyMode::BlurHover) {
+                $attributes['data-privacy-hover'] = 'true';
+            }
+        }
+
+        // Audit attributes
+        if (($meta['privacy_audit_reveal'] ?? false) && $decision->canRevealInteractively) {
+            $attributes['data-privacy-audit'] = 'true';
+            $attributes['data-privacy-column'] = $columnName;
+            $attributes['data-privacy-mode'] = $decision->mode->value;
+
+            $recordId = $record ? $record->getKey() : '';
+            if ($recordId) {
+                $attributes['data-privacy-record-id'] = $recordId;
+            }
+
+            // Add panel context for audit
+            $panel = Filament::getCurrentPanel();
+            if ($panel) {
+                $attributes['data-privacy-panel'] = $panel->getId();
+            }
+
+            // Add resource for audit
+            $resourceClass = self::resolveResourceClass($field);
+            if ($resourceClass) {
+                $attributes['data-privacy-resource'] = $resourceClass;
+            }
+
+            // Add tenant context if available (for multi-tenant apps)
+            if (function_exists('tenancy') && tenancy()->initialized) {
+                $tenant = tenancy()->getTenant();
+                if ($tenant) {
+                    $attributes['data-privacy-tenant-id'] = $tenant->getKey();
+                }
+            }
+        }
+
+        return $attributes;
     }
 
     public static function applyMasking(mixed $state, ?Model $record, mixed $maskStrategy): mixed

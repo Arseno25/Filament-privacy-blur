@@ -30,7 +30,8 @@ return [
     |--------------------------------------------------------------------------
     |
     | If the field is set to mask instead of blur, how should it mask by default
-    | if not specified? Options: 'email', 'phone', 'nik', 'full_name', 'card'.
+    | if not specified? Options: 'email', 'phone', 'nik', 'full_name', 'api_key',
+    | 'address', 'generic'.
     |
     */
     'default_mask_strategy' => 'generic',

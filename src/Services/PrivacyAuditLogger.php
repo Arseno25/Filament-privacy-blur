@@ -17,7 +17,9 @@ class PrivacyAuditLogger
         ?string $recordKey = null,
         ?string $resource = null,
         ?string $page = null,
-        ?string $panel = null
+        ?string $panel = null,
+        ?string $ipAddress = null,
+        ?string $userAgent = null
     ): void {
         if (! PrivacyConfigResolver::isAuditEnabled()) {
             return;
@@ -36,6 +38,8 @@ class PrivacyAuditLogger
             'column_name' => $columnName,
             'record_key' => $recordKey,
             'reveal_mode' => $revealMode,
+            'ip_address' => $ipAddress,
+            'user_agent' => $userAgent,
         ]);
     }
 }

@@ -73,13 +73,7 @@
             "composer/package-versions-deprecated": true,
             "pestphp/pest-plugin": true,
             "phpstan/extension-installer": true
-        },
-        "audit": {
-            "ignore": {
-                "filament/tables": "PKSA-5bdf-2x61-v43c"
-            }
         }
     },
-    "minimum-stability": "dev",
     "prefer-stable": true
 }
