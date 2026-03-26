@@ -135,6 +135,82 @@ it('exceptPanels bypasses privacy for all fields in excepted panel', function ()
 
     // Excepted panel should bypass all privacy effects
     expect($decision->hasPrivacyEffect())->toBeFalse();
+    expect($decision->shouldBlur)->toBeFalse();
+    expect($decision->shouldRenderMasked)->toBeFalse();
+    expect($decision->canRevealInteractively)->toBeFalse();
+    expect($decision->canBeGloballyRevealed)->toBeFalse();
+});
+
+it('exceptPanels at plugin level overrides authorization for non-excepted panels', function () {
+    // Prove that panel exclusion at plugin level affects real decision flow
+    // and non-excepted panels still respect authorization
+
+    $plugin = FilamentPrivacyBlurPlugin::make()
+        ->exceptPanels(['public-panel']);
+
+    $publicPanel = Panel::make('public')->id('public-panel')->plugin($plugin);
+    $adminPanel = Panel::make('admin')->id('admin-panel')->plugin($plugin);
+
+    // Test PUBLIC panel (excepted) - should bypass privacy even unauthorized
+    Filament::setCurrentPanel($publicPanel);
+
+    $publicResult = PrivacyDecisionResolver::resolveForColumn(
+        'salary',
+        PrivacyMode::BlurClick,
+        isAuthorized: false, // Unauthorized
+        columnBlur: null,
+        record: null,
+        hiddenRoles: null,
+        resourceClass: null,
+        neverReveal: false
+    );
+
+    $publicDecision = $publicResult['decision'];
+
+    // Public panel bypasses privacy entirely
+    expect($publicDecision->hasPrivacyEffect())->toBeFalse();
+    expect($publicDecision->shouldBlur)->toBeFalse();
+    expect($publicDecision->canRevealInteractively)->toBeFalse();
+
+    // Test ADMIN panel (NOT excepted) - should respect authorization
+    Filament::setCurrentPanel($adminPanel);
+
+    $adminResultUnauthorized = PrivacyDecisionResolver::resolveForColumn(
+        'salary',
+        PrivacyMode::BlurClick,
+        isAuthorized: false, // Unauthorized
+        columnBlur: null,
+        record: null,
+        hiddenRoles: null,
+        resourceClass: null,
+        neverReveal: false
+    );
+
+    $adminUnauthorizedDecision = $adminResultUnauthorized['decision'];
+
+    // Admin panel enforces privacy for unauthorized users
+    expect($adminUnauthorizedDecision->hasPrivacyEffect())->toBeTrue();
+    expect($adminUnauthorizedDecision->shouldBlur)->toBeTrue();
+    expect($adminUnauthorizedDecision->canRevealInteractively)->toBeFalse();
+
+    // Admin panel with authorized user should allow reveal
+    $adminResultAuthorized = PrivacyDecisionResolver::resolveForColumn(
+        'salary',
+        PrivacyMode::BlurClick,
+        isAuthorized: true, // Authorized
+        columnBlur: null,
+        record: null,
+        hiddenRoles: null,
+        resourceClass: null,
+        neverReveal: false
+    );
+
+    $adminAuthorizedDecision = $adminResultAuthorized['decision'];
+
+    expect($adminAuthorizedDecision->hasPrivacyEffect())->toBeTrue();
+    expect($adminAuthorizedDecision->shouldBlur)->toBeTrue();
+    expect($adminAuthorizedDecision->canRevealInteractively)->toBeTrue();
+    expect($adminAuthorizedDecision->canBeGloballyRevealed)->toBeTrue();
 });
 
 it('exceptPanels at config level bypasses privacy for specified panels', function () {
