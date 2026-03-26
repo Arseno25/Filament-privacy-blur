@@ -8,7 +8,6 @@ use Filament\Facades\Filament;
 use Filament\Panel;
 use Illuminate\Support\Facades\Config;
 
-uses(TestCase::class);
 
 it('resolves default mode from config', function () {
     Config::set('filament-privacy-blur.default_mode', 'blur_click');

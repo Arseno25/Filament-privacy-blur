@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\Config;
 
 use function Pest\Laravel\postJson;
 
-uses(TestCase::class);
 uses(RefreshDatabase::class);
 
 it('logs audit reveal request', function () {

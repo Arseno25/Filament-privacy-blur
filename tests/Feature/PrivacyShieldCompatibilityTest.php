@@ -7,7 +7,6 @@ use Illuminate\Foundation\Auth\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 
-uses(TestCase::class);
 
 // Note: Gate::forget() is not available in Laravel 11+
 // We define gates with unique names per test to avoid conflicts

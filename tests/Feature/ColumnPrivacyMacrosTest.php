@@ -10,7 +10,6 @@ use Filament\Tables\Columns\TextColumn;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
 
-uses(TestCase::class);
 
 it('registers private macro on form input without error', function () {
     $panel = Panel::make('test')->id('test')->plugin(FilamentPrivacyBlurPlugin::make());

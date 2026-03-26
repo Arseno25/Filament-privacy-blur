@@ -5,7 +5,6 @@ use Arseno25\FilamentPrivacyBlur\Tests\TestCase;
 use Illuminate\Foundation\Auth\User;
 use Illuminate\Support\Facades\Auth;
 
-uses(TestCase::class);
 
 it('returns false when no constraints are provided (secure by default)', function () {
     $user = new User;

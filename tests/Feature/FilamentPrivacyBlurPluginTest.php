@@ -7,7 +7,6 @@ use Filament\Panel;
 use Filament\Support\Facades\FilamentView;
 use Filament\View\PanelsRenderHook;
 
-uses(TestCase::class);
 
 it('registers render hooks inside panel boot method', function () {
     $plugin = FilamentPrivacyBlurPlugin::make();

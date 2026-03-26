@@ -12,7 +12,6 @@ use Illuminate\Foundation\Auth\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 
-uses(TestCase::class);
 
 // ============================================================================
 // authorizeRevealWith() & revealIfCan() Tests
