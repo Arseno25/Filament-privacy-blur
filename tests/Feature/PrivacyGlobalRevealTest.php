@@ -2,6 +2,10 @@
 
 use Arseno25\FilamentPrivacyBlur\Enums\PrivacyMode;
 use Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver;
+use Arseno25\FilamentPrivacyBlur\Tests\TestCase;
+use Illuminate\Foundation\Auth\User;
+
+uses(TestCase::class);
 
 it('only reveals fields user is authorized for during global reveal', function () {
     // Test that decision resolver returns different results based on authorization
@@ -35,6 +39,24 @@ it('only reveals fields user is authorized for during global reveal', function (
 });
 
 it('hiddenFromRoles prevents global reveal', function () {
+    // Create a user with roles
+    $user = new class extends User {
+        public array $roles = ['guest'];
+
+        public function hasRole(string $role): bool
+        {
+            return in_array($role, $this->roles);
+        }
+
+        public function hasAnyRole(array $roles): bool
+        {
+            return !empty(array_intersect($roles, $this->roles));
+        }
+    };
+    $user->id = 1;
+
+    auth()->login($user);
+
     $decision = PrivacyDecisionResolver::resolveForColumn(
         'customer_notes',
         PrivacyMode::BlurClick,
@@ -47,9 +69,9 @@ it('hiddenFromRoles prevents global reveal', function () {
     );
 
     // With hidden roles, reveal should always be disabled
-    // (Note: isHidden() is checked inside the resolver, so we pass a scenario
-    // where the resolver would detect the user is in a hidden role)
     expect($decision['reveal_enabled'])->toBeFalse();
+
+    auth()->logout();
 });
 
 it('revealNever prevents any reveal even for authorized users', function () {
@@ -69,6 +91,24 @@ it('revealNever prevents any reveal even for authorized users', function () {
 });
 
 it('neverReveal combined with hiddenRoles prevents reveal', function () {
+    // Create a user with roles
+    $user = new class extends User {
+        public array $roles = ['guest'];
+
+        public function hasRole(string $role): bool
+        {
+            return in_array($role, $this->roles);
+        }
+
+        public function hasAnyRole(array $roles): bool
+        {
+            return !empty(array_intersect($roles, $this->roles));
+        }
+    };
+    $user->id = 1;
+
+    auth()->login($user);
+
     $decision = PrivacyDecisionResolver::resolveForColumn(
         'secret_data',
         PrivacyMode::BlurClick,
@@ -82,13 +122,15 @@ it('neverReveal combined with hiddenRoles prevents reveal', function () {
 
     // Both flags should prevent reveal
     expect($decision['reveal_enabled'])->toBeFalse();
+
+    auth()->logout();
 });
 
 it('blur mode without reveal has correct decision', function () {
     $decision = PrivacyDecisionResolver::resolveForColumn(
         'password',
         PrivacyMode::Blur,
-        isAuthorized: true, // Even authorized users
+        isAuthorized: true, // Authorized users bypass blur entirely
         columnBlur: null,
         record: null,
         hiddenRoles: null,
@@ -96,8 +138,27 @@ it('blur mode without reveal has correct decision', function () {
         neverReveal: false
     );
 
-    // Blur mode should blur but not enable reveal
+    // Blur mode with authorized user: no blur, no mask, no reveal
+    expect($decision['should_blur'])->toBeFalse();
+    expect($decision['should_mask'])->toBeFalse();
+    expect($decision['reveal_enabled'])->toBeFalse();
+});
+
+it('blur mode with unauthorized user still blurs', function () {
+    $decision = PrivacyDecisionResolver::resolveForColumn(
+        'password',
+        PrivacyMode::Blur,
+        isAuthorized: false, // Unauthorized users still see blur
+        columnBlur: null,
+        record: null,
+        hiddenRoles: null,
+        resourceClass: null,
+        neverReveal: false
+    );
+
+    // Blur mode with unauthorized user: blur, no reveal
     expect($decision['should_blur'])->toBeTrue();
+    expect($decision['should_mask'])->toBeFalse();
     expect($decision['reveal_enabled'])->toBeFalse();
 });
 

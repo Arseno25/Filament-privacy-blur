@@ -1,23 +1,16 @@
 <?php
 
 use Arseno25\FilamentPrivacyBlur\Services\PrivacyAuthorizationService;
+use Arseno25\FilamentPrivacyBlur\Tests\TestCase;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 
-beforeEach(function () {
-    // Clear any existing gates
-    Gate::forget('view_sensitive_data');
-    Gate::forget('view_admin_data');
-    Gate::forget('access_pii');
-});
+uses(TestCase::class);
 
-afterEach(function () {
-    // Clean up gates after each test
-    Gate::forget('view_sensitive_data');
-    Gate::forget('view_admin_data');
-    Gate::forget('access_pii');
-});
+// Note: Gate::forget() is not available in Laravel 11+
+// We define gates with unique names per test to avoid conflicts
 
 /**
  * Shield Compatibility Tests
@@ -92,8 +85,8 @@ it('Shield abilities work with policy methods via can()', function () {
     $user->id = 1;
     Auth::login($user);
 
-    $record = new class
-    {
+    $record = new class extends Model {
+        protected $fillable = ['owner_id'];
         public $owner_id = 1;
     };
 
@@ -218,5 +211,5 @@ it('handles unauthorized Shield permissions correctly', function () {
     $result = PrivacyAuthorizationService::authorizeWith('view_admin_only');
 
     expect($result->authorized)->toBeFalse()
-        ->and($result->reason)->toBe('can_denied'); // Falls back to can() since Gate allows
+        ->and($result->reason)->toBe('gate_denied'); // Gate denies access
 });

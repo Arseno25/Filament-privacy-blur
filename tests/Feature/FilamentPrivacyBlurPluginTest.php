@@ -1,10 +1,13 @@
 <?php
 
 use Arseno25\FilamentPrivacyBlur\FilamentPrivacyBlurPlugin;
+use Arseno25\FilamentPrivacyBlur\Tests\TestCase;
 use Filament\Facades\Filament;
 use Filament\Panel;
 use Filament\Support\Facades\FilamentView;
 use Filament\View\PanelsRenderHook;
+
+uses(TestCase::class);
 
 it('registers render hooks inside panel boot method', function () {
     $plugin = FilamentPrivacyBlurPlugin::make();

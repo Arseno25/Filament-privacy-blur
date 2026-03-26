@@ -1,11 +1,13 @@
 <?php
 
 use Arseno25\FilamentPrivacyBlur\Models\PrivacyRevealLog;
+use Arseno25\FilamentPrivacyBlur\Tests\TestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 
 use function Pest\Laravel\postJson;
 
+uses(TestCase::class);
 uses(RefreshDatabase::class);
 
 it('logs audit reveal request', function () {
@@ -100,7 +102,7 @@ it('captures user agent from request', function () {
     postJson('/filament-privacy-blur/audit', [
         'column' => 'email',
         'mode' => 'blur_click',
-    ], [], [
+    ], [
         'HTTP_USER_AGENT' => 'Mozilla/5.0 (Test Browser)',
     ])->assertSuccessful();
 
@@ -122,7 +124,6 @@ it('logs all metadata including IP and user agent', function () {
         'panel' => 'admin',
     ], [
         'REMOTE_ADDR' => '10.0.0.50',
-    ], [
         'HTTP_USER_AGENT' => 'Mozilla/5.0 (Test Agent)',
     ])->assertSuccessful();
 

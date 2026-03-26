@@ -2,23 +2,16 @@
 
 use Arseno25\FilamentPrivacyBlur\DataTransferObjects\AuthorizationResult;
 use Arseno25\FilamentPrivacyBlur\Services\PrivacyAuthorizationService;
+use Arseno25\FilamentPrivacyBlur\Tests\TestCase;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 
-beforeEach(function () {
-    // Clear any existing gates
-    Gate::forget('view-sensitive-data');
-    Gate::forget('view-ssn');
-    Gate::forget('admin-access');
-});
+uses(TestCase::class);
 
-afterEach(function () {
-    // Clean up gates after each test
-    Gate::forget('view-sensitive-data');
-    Gate::forget('view-ssn');
-    Gate::forget('admin-access');
-});
+// Note: Gate::forget() is not available in Laravel 11+
+// We define gates with unique names per test to avoid conflicts
 
 it('authorizes reveal using Laravel Gate when gate exists', function () {
     Gate::define('view-ssn', fn ($user) => $user->id === 1);
@@ -81,8 +74,8 @@ it('authorizes using custom closure with full context', function () {
 
     $closure = fn ($user, $record) => $user->name === 'Admin' && $record?->id === 42;
 
-    $testRecord = new class
-    {
+    $testRecord = new class extends Model {
+        protected $fillable = ['id'];
         public $id = 42;
     };
 
@@ -105,10 +98,9 @@ it('passes record to custom closure correctly', function () {
         return true;
     };
 
-    $testRecord = new class
-    {
+    $testRecord = new class extends Model {
+        protected $fillable = ['id', 'name'];
         public $id = 42;
-
         public $name = 'Test Record';
     };
 

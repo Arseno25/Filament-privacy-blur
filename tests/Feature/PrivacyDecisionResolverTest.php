@@ -2,7 +2,10 @@
 
 use Arseno25\FilamentPrivacyBlur\Enums\PrivacyMode;
 use Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver;
+use Arseno25\FilamentPrivacyBlur\Tests\TestCase;
 use Illuminate\Support\Facades\Config;
+
+uses(TestCase::class);
 
 it('returns empty decision if globally disabled', function () {
     // Explicitly disable for this test
