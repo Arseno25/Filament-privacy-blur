@@ -72,6 +72,7 @@ public function panel(Panel $panel): Panel
                 ->defaultMode('blur_click')
                 ->blurAmount(4)
                 ->exceptColumns(['id', 'created_at', 'updated_at'])
+                ->exceptPanels(['public']) // Optional: exclude specific panels
                 ->enableAudit()
         );
 }
@@ -405,6 +406,12 @@ The global reveal toggle (eye icon in topbar) only reveals fields that:
 1. The current user is authorized to view (via `revealIfCan()`, `permission()`, etc.)
 2. The field is not marked as `revealNever()`
 3. The field is not in `hiddenFromRoles()` for the current user
+
+The toggle automatically hides itself when there are no globally revealable fields on the current page, providing a cleaner user interface.
+
+You can control the toggle visibility using:
+- `showGlobalRevealToggle()` - Show the toggle (default)
+- `hideGlobalRevealToggle()` - Hide the toggle entirely
 
 This ensures that global reveal cannot bypass any authorization rules.
 

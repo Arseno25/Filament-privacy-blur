@@ -123,7 +123,12 @@ class PrivacyConfigResolver
             return false;
         }
 
-        $excepted = config('filament-privacy-blur.except_panels', []);
+        $plugin = self::getPlugin();
+        $excepted = $plugin ? $plugin->getExceptPanels() : [];
+
+        if (empty($excepted)) {
+            $excepted = config('filament-privacy-blur.except_panels', []);
+        }
 
         return in_array($panel->getId(), $excepted);
     }

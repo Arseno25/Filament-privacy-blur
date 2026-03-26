@@ -114,15 +114,15 @@ class ColumnPrivacyMacros
                                 if ($mode === PrivacyMode::BlurClick) {
                                     // Click to reveal — data attributes are on the outer wrapper via extraAttributes
                                     return new HtmlString(
-                                        "<span class=\"{$blurClass} fi-text-transparent fi-cursor-pointer transition-all duration-300 select-none\">" .
-                                        e((string) $state) .
+                                        "<span class=\"{$blurClass} fi-text-transparent fi-cursor-pointer transition-all duration-300 select-none\">".
+                                        e((string) $state).
                                         '</span>'
                                     );
                                 } elseif ($mode === PrivacyMode::BlurHover) {
                                     // Hover to reveal
                                     return new HtmlString(
-                                        "<span class=\"{$blurClass} fi-hover fi-text-transparent transition-all duration-300 select-none\">" .
-                                        e((string) $state) .
+                                        "<span class=\"{$blurClass} fi-hover fi-text-transparent transition-all duration-300 select-none\">".
+                                        e((string) $state).
                                         '</span>'
                                     );
                                 }
@@ -130,8 +130,8 @@ class ColumnPrivacyMacros
 
                             // No reveal - always blurred
                             return new HtmlString(
-                                "<span class=\"{$blurClass} fi-text-transparent transition-all duration-300 select-none\">" .
-                                e((string) $state) .
+                                "<span class=\"{$blurClass} fi-text-transparent transition-all duration-300 select-none\">".
+                                e((string) $state).
                                 '</span>'
                             );
                         }
@@ -144,7 +144,7 @@ class ColumnPrivacyMacros
             },
 
             // Fluent API methods using PrivacyMetadataHelper
-            'privacyMode' => function (PrivacyMode | string $mode) {
+            'privacyMode' => function (PrivacyMode|string $mode) {
                 /** @var Column|Entry|Field $this */
                 if (is_string($mode)) {
                     $mode = PrivacyMode::from($mode);
@@ -153,7 +153,7 @@ class ColumnPrivacyMacros
                 return PrivacyMetadataHelper::set($this, ['privacy_mode' => $mode]);
             },
 
-            'maskUsing' => function (Closure | string $strategy) {
+            'maskUsing' => function (Closure|string $strategy) {
                 /** @var Column|Entry|Field $this */
                 return PrivacyMetadataHelper::set($this, ['mask_strategy' => $strategy]);
             },
@@ -265,7 +265,7 @@ class ColumnPrivacyMacros
      * Resolve the privacy decision for a field (Column, Entry, or Field).
      */
     public static function resolveDecisionForField(
-        Column | Entry | Field $field,
+        Column|Entry|Field $field,
         ?Model $record,
         array $meta
     ): PrivacyDecision {
@@ -304,7 +304,7 @@ class ColumnPrivacyMacros
         string $columnName,
         ?Model $record,
         array $meta,
-        Column | Entry | Field $field
+        Column|Entry|Field $field
     ): array {
         $attributes = [
             'data-privacy-enabled' => 'true',
