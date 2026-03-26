@@ -8,6 +8,7 @@ use Filament\Panel;
 use Filament\Tables\Columns\TextColumn;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
+use Illuminate\Support\HtmlString;
 
 it('registers private macro on form input without error', function () {
     $panel = Panel::make('test')->id('test')->plugin(FilamentPrivacyBlurPlugin::make());
@@ -150,4 +151,94 @@ it('detects export context correctly', function () {
     app()->instance('request', $headerRequest);
 
     expect(ColumnPrivacyMacros::isExportContext())->toBeTrue();
+});
+
+it('export context masks blur fields instead of exposing raw data', function () {
+    $panel = Panel::make('admin')->id('admin')->plugin(FilamentPrivacyBlurPlugin::make());
+    Filament::setCurrentPanel($panel);
+
+    // Simulate a real export request
+    $request = Request::create('/admin/employees/export', 'GET');
+    $request->setRouteResolver(
+        function () use ($request) {
+            return (new Route('GET', '/admin/employees/export', []))
+                ->bind($request)
+                ->name('filament.admin.resources.employees.export');
+        }
+    );
+
+    app()->instance('request', $request);
+
+    // In export context, blur_click mode should apply masking instead of blur
+    $blurClickColumn = TextColumn::make('email')
+        ->private()
+        ->privacyMode('blur_click');
+
+    $formatted = $blurClickColumn->formatState('john.doe@company.com');
+
+    // Export should mask the email, not return raw data
+    expect($formatted)->not->toBe('john.doe@company.com')
+        ->and($formatted)->toContain('**'); // Masked output
+});
+
+it('export context preserves mask strategy configuration', function () {
+    $panel = Panel::make('admin')->id('admin')->plugin(FilamentPrivacyBlurPlugin::make());
+    Filament::setCurrentPanel($panel);
+
+    // Create export request
+    $request = Request::create('/users/export', 'GET');
+    $request->setRouteResolver(
+        function () use ($request) {
+            return (new Route('GET', '/users/export', []))
+                ->bind($request)
+                ->name('users.export');
+        }
+    );
+
+    app()->instance('request', $request);
+
+    // Test that custom mask strategies are preserved in export context
+    $phoneColumn = TextColumn::make('phone')
+        ->private()
+        ->maskUsing('phone');
+
+    $emailColumn = TextColumn::make('email')
+        ->private()
+        ->maskUsing('email');
+
+    $genericColumn = TextColumn::make('address')
+        ->private();
+
+    expect($phoneColumn->formatState('081234567890'))->toBe('0812****7890')
+        ->and($emailColumn->formatState('user@example.com'))->toContain('**')
+        ->and($genericColumn->formatState('Some Address'))->toContain('***');
+});
+
+it('non-export routes do not apply export masking', function () {
+    $panel = Panel::make('admin')->id('admin')->plugin(FilamentPrivacyBlurPlugin::make());
+    Filament::setCurrentPanel($panel);
+
+    // Regular index route (not export)
+    $request = Request::create('/admin/users', 'GET');
+    $request->setRouteResolver(
+        function () use ($request) {
+            return (new Route('GET', '/admin/users', []))
+                ->bind($request)
+                ->name('filament.admin.resources.users.index');
+        }
+    );
+
+    app()->instance('request', $request);
+
+    // In regular view, blur_click should preserve original data (blur is client-side)
+    $column = TextColumn::make('email')
+        ->private()
+        ->privacyMode('blur_click');
+
+    $formatted = $column->formatState('user@example.com');
+
+    // Non-export context returns HtmlString with blur classes (client-side blur)
+    expect($formatted)->toBeInstanceOf(HtmlString::class);
+    expect($formatted->toHtml())->toContain('user@example.com');
+    expect($formatted->toHtml())->toContain('fi-privacy-blur');
 });

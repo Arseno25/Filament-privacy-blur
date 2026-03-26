@@ -3,6 +3,7 @@
 use Arseno25\FilamentPrivacyBlur\Enums\PrivacyMode;
 use Arseno25\FilamentPrivacyBlur\FilamentPrivacyBlurPlugin;
 use Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyConfigResolver;
+use Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver;
 use Filament\Facades\Filament;
 use Filament\Panel;
 use Illuminate\Support\Facades\Config;
@@ -106,4 +107,59 @@ it('exceptPanels at plugin level affects resolver decision flow', function () {
     $userPanel = Panel::make('user')->id('user-panel')->plugin($plugin);
     Filament::setCurrentPanel($userPanel);
     expect(PrivacyConfigResolver::isPanelExcepted())->toBeFalse();
+});
+
+it('exceptPanels bypasses privacy for all fields in excepted panel', function () {
+    // Test real resolver behavior: excepted panels should bypass privacy for all fields
+
+    $plugin = FilamentPrivacyBlurPlugin::make()
+        ->exceptPanels(['public-panel']);
+
+    $publicPanel = Panel::make('public')->id('public-panel')->plugin($plugin);
+    Filament::setCurrentPanel($publicPanel);
+
+    // Even with no authorization, fields in excepted panel should bypass privacy
+    $result = PrivacyDecisionResolver::resolveForColumn(
+        'email', // Normally private field
+        PrivacyMode::BlurClick,
+        isAuthorized: false, // Even unauthorized
+        columnBlur: null,
+        record: null,
+        hiddenRoles: null,
+        resourceClass: null,
+        neverReveal: false
+    );
+
+    // The result contains the decision object in the 'decision' key
+    $decision = $result['decision'];
+
+    // Excepted panel should bypass all privacy effects
+    expect($decision->hasPrivacyEffect())->toBeFalse();
+});
+
+it('exceptPanels at config level bypasses privacy for specified panels', function () {
+    // Test that config-level except_panels also works correctly
+    Config::set('filament-privacy-blur.except_panels', ['public', 'reports']);
+
+    $publicPanel = Panel::make('public')->id('public');
+    Filament::setCurrentPanel($publicPanel);
+
+    // Panel in config except list should bypass privacy
+    expect(PrivacyConfigResolver::isPanelExcepted())->toBeTrue();
+
+    // Create a decision for a field in the excepted panel
+    $result = PrivacyDecisionResolver::resolveForColumn(
+        'sensitive_data',
+        PrivacyMode::BlurClick,
+        isAuthorized: false,
+        columnBlur: null,
+        record: null,
+        hiddenRoles: null,
+        resourceClass: null,
+        neverReveal: false
+    );
+
+    $decision = $result['decision'];
+
+    expect($decision->hasPrivacyEffect())->toBeFalse();
 });

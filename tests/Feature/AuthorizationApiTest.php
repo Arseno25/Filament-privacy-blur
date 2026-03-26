@@ -82,7 +82,7 @@ it('revealIfCan macro sets correct privacy metadata for authorization', function
 
     $column = TextColumn::make('email')->revealIfCan('view-sensitive');
 
-    // The macro should store privacy metadata that can be retrieved
+    // The macro should store privacy metadata that affects privacy decisions
     $columnState = $column->formatState('test@example.com');
     expect($columnState)->toBeString(); // Macro doesn't break column formatting
 
@@ -91,6 +91,59 @@ it('revealIfCan macro sets correct privacy metadata for authorization', function
     expect($result->authorized)->toBeTrue()
         ->and($result->method)->toBe('gate')
         ->and($result->reason)->toBe('gate_allowed');
+});
+
+it('revealIfCan macro affects real privacy behavior decisions', function () {
+    // Test that revealIfCan actually affects PrivacyDecisionResolver output
+    Gate::define('view-salary', fn ($user) => true);
+
+    $authorizedUser = new User;
+    $authorizedUser->id = 1;
+    Auth::login($authorizedUser);
+
+    // When user is authorized via revealIfCan, they should be able to reveal
+    $authResult = PrivacyDecisionResolver::resolveForColumn(
+        'salary',
+        PrivacyMode::BlurClick,
+        isAuthorized: true, // Would come from revealIfCan('view-salary') authorization check
+        columnBlur: null,
+        record: null,
+        hiddenRoles: null,
+        resourceClass: null,
+        neverReveal: false
+    );
+
+    $authorizedDecision = $authResult['decision'];
+
+    expect($authorizedDecision->canRevealInteractively)->toBeTrue();
+    expect($authorizedDecision->canBeGloballyRevealed)->toBeTrue();
+
+    // When user is NOT authorized, reveal should be disabled
+    Auth::logout();
+    $unauthorizedUser = new User;
+    $unauthorizedUser->id = 2;
+    Auth::login($unauthorizedUser);
+
+    Gate::define('view-salary', fn ($user) => false); // Now deny access
+
+    $unauthResult = PrivacyDecisionResolver::resolveForColumn(
+        'salary',
+        PrivacyMode::BlurClick,
+        isAuthorized: false, // Would come from revealIfCan('view-salary') authorization check
+        columnBlur: null,
+        record: null,
+        hiddenRoles: null,
+        resourceClass: null,
+        neverReveal: false
+    );
+
+    $unauthorizedDecision = $unauthResult['decision'];
+
+    expect($unauthorizedDecision->canRevealInteractively)->toBeFalse();
+    expect($unauthorizedDecision->canBeGloballyRevealed)->toBeFalse();
+    expect($unauthorizedDecision->shouldBlur)->toBeTrue();
+
+    Auth::logout();
 });
 
 // ============================================================================

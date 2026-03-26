@@ -1,6 +1,7 @@
 <?php
 
 use Arseno25\FilamentPrivacyBlur\Models\PrivacyRevealLog;
+use Illuminate\Foundation\Auth\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
 
@@ -134,4 +135,141 @@ it('logs all metadata including IP and user agent', function () {
         ->and($log->panel_id)->toBe('admin')
         ->and($log->ip_address)->toBe('10.0.0.50')
         ->and($log->user_agent)->toBe('Mozilla/5.0 (Test Agent)');
+});
+
+it('validates that column is required', function () {
+    Config::set('filament-privacy-blur.audit_enabled', true);
+
+    $this->withoutMiddleware();
+
+    postJson('/filament-privacy-blur/audit', [
+        'mode' => 'blur_click',
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors(['column']);
+});
+
+it('validates that mode is required', function () {
+    Config::set('filament-privacy-blur.audit_enabled', true);
+
+    $this->withoutMiddleware();
+
+    postJson('/filament-privacy-blur/audit', [
+        'column' => 'email',
+    ])->assertUnprocessable()
+        ->assertJsonValidationErrors(['mode']);
+});
+
+it('allows optional fields to be nullable', function () {
+    Config::set('filament-privacy-blur.audit_enabled', true);
+
+    $this->withoutMiddleware();
+
+    postJson('/filament-privacy-blur/audit', [
+        'column' => 'salary',
+        'mode' => 'blur_click',
+        // record_id, resource, panel are optional
+    ])->assertSuccessful();
+
+    $log = PrivacyRevealLog::first();
+    expect($log)->not->toBeNull()
+        ->and($log->column_name)->toBe('salary')
+        ->and($log->record_key)->toBeNull()
+        ->and($log->resource)->toBeNull()
+        ->and($log->panel_id)->toBeNull();
+});
+
+it('captures authenticated user_id correctly', function () {
+    Config::set('filament-privacy-blur.audit_enabled', true);
+
+    $user = new class extends User
+    {
+        protected $fillable = ['id', 'name'];
+
+        public $id = 42;
+
+        public $name = 'Test User';
+    };
+
+    $this->actingAs($user);
+    $this->withoutMiddleware();
+
+    postJson('/filament-privacy-blur/audit', [
+        'column' => 'email',
+        'mode' => 'blur_click',
+    ])->assertSuccessful();
+
+    $log = PrivacyRevealLog::first();
+    expect($log)->not->toBeNull()
+        ->and($log->user_id)->toBe(42);
+});
+
+it('stores null user_id when not authenticated', function () {
+    Config::set('filament-privacy-blur.audit_enabled', true);
+
+    auth()->logout();
+    $this->withoutMiddleware();
+
+    postJson('/filament-privacy-blur/audit', [
+        'column' => 'email',
+        'mode' => 'blur_click',
+    ])->assertSuccessful();
+
+    $log = PrivacyRevealLog::first();
+    expect($log)->not->toBeNull()
+        ->and($log->user_id)->toBeNull();
+});
+
+it('captures page url from referrer', function () {
+    Config::set('filament-privacy-blur.audit_enabled', true);
+
+    $this->withoutMiddleware();
+
+    postJson('/filament-privacy-blur/audit', [
+        'column' => 'salary',
+        'mode' => 'blur_click',
+    ], ['HTTP_REFERER' => 'https://example.com/admin/employees'])->assertSuccessful();
+
+    $log = PrivacyRevealLog::first();
+    expect($log)->not->toBeNull()
+        ->and($log->page)->toBe('https://example.com/admin/employees');
+});
+
+it('stores all core fields in database correctly', function () {
+    Config::set('filament-privacy-blur.audit_enabled', true);
+
+    $user = new class extends User
+    {
+        protected $fillable = ['id', 'name'];
+
+        public $id = 123;
+
+        public $name = 'Admin User';
+    };
+
+    $this->actingAs($user);
+    $this->withoutMiddleware();
+
+    postJson('/filament-privacy-blur/audit', [
+        'column' => 'ssn',
+        'record_id' => 'employee-456',
+        'mode' => 'blur_click',
+        'resource' => 'App\\Filament\\Resources\\EmployeeResource',
+        'panel' => 'admin-panel',
+    ], [
+        'REMOTE_ADDR' => '192.168.100.50',
+        'HTTP_USER_AGENT' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+    ])->assertSuccessful();
+
+    $log = PrivacyRevealLog::first();
+    expect($log)->not->toBeNull()
+        ->and($log->user_id)->toBe(123)
+        ->and($log->tenant_id)->toBeNull() // No tenant in this test
+        ->and($log->panel_id)->toBe('admin-panel')
+        ->and($log->resource)->toBe('App\\Filament\\Resources\\EmployeeResource')
+        ->and($log->column_name)->toBe('ssn')
+        ->and($log->record_key)->toBe('employee-456')
+        ->and($log->reveal_mode)->toBe('blur_click')
+        ->and($log->ip_address)->toBe('192.168.100.50')
+        ->and($log->user_agent)->toBe('Mozilla/5.0 (Windows NT 10.0; Win64; x64)')
+        ->and($log->created_at)->not->toBeNull();
 });

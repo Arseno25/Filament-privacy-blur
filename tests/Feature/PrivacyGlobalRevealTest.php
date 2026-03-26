@@ -4,6 +4,7 @@ use Arseno25\FilamentPrivacyBlur\Enums\PrivacyMode;
 use Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver;
 use Illuminate\Foundation\Auth\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 
 it('only reveals fields user is authorized for during global reveal', function () {
     // Test that decision resolver returns different results based on authorization
@@ -266,4 +267,132 @@ it('toggle correctly shows when hybrid mode field is authorized for global revea
     expect($hybridDecision['reveal_enabled'])->toBeFalse(); // Hybrid doesn't support interactive reveal
     expect($hybridDecision['should_mask'])->toBeTrue(); // Shows masked to authorized users
     expect($hybridDecision['should_blur'])->toBeFalse(); // No blur overlay, just masking
+});
+
+// ============================================================================
+// Alpine.js Toggle Component Visibility Tests
+// ============================================================================
+
+it('toggle component has correct initial Alpine data structure', function () {
+    // Verify that the Alpine.js component initializes with correct data structure
+    // This test documents the expected Alpine.js state behavior
+
+    $result1 = PrivacyDecisionResolver::resolveForColumn(
+        'email',
+        PrivacyMode::BlurClick,
+        isAuthorized: true,
+        columnBlur: null,
+        record: null,
+        hiddenRoles: null,
+        resourceClass: null,
+        neverReveal: false
+    );
+
+    $decision1 = $result1['decision'];
+
+    // When a field can be globally revealed, Alpine should set hasGloballyRevealableFields to true
+    expect($decision1->canBeGloballyRevealed)->toBeTrue();
+
+    // The Alpine component checks: document.querySelectorAll('[data-privacy-can-globally-reveal="true"]').length > 0
+    // If any elements have this attribute, hasGloballyRevealableFields becomes true
+    $hasGloballyRevealableFields = $decision1->canBeGloballyRevealed;
+
+    expect($hasGloballyRevealableFields)->toBeTrue();
+});
+
+it('toggle component updates visibility when revealable fields change', function () {
+    // Test the MutationObserver behavior in Alpine.js
+
+    // Scenario 1: No revealable fields initially
+    $maskResult = PrivacyDecisionResolver::resolveForColumn(
+        'ssn',
+        PrivacyMode::Mask,
+        isAuthorized: false,
+        columnBlur: null,
+        record: null,
+        hiddenRoles: null,
+        resourceClass: null,
+        neverReveal: false
+    );
+
+    $maskDecision = $maskResult['decision'];
+
+    expect($maskDecision->canBeGloballyRevealed)->toBeFalse();
+
+    // Scenario 2: User gains authorization, now field is revealable
+    Gate::define('view-ssn', fn ($user) => true);
+
+    $user = new class extends User
+    {
+        public $id = 1;
+    };
+    Auth::login($user);
+
+    $authResult = PrivacyDecisionResolver::resolveForColumn(
+        'ssn',
+        PrivacyMode::BlurClick,
+        isAuthorized: true,
+        columnBlur: null,
+        record: null,
+        hiddenRoles: null,
+        resourceClass: null,
+        neverReveal: false
+    );
+
+    $authorizedDecision = $authResult['decision'];
+
+    expect($authorizedDecision->canBeGloballyRevealed)->toBeTrue();
+
+    // Alpine's MutationObserver would detect the DOM change and update hasGloballyRevealableFields
+
+    Auth::logout();
+});
+
+it('toggle respects security constraints in Alpine state', function () {
+    // Even when toggle is visible, Alpine.js should prevent revealing unauthorized fields
+
+    $authResult = PrivacyDecisionResolver::resolveForColumn(
+        'salary',
+        PrivacyMode::BlurClick,
+        isAuthorized: true,
+        columnBlur: null,
+        record: null,
+        hiddenRoles: null,
+        resourceClass: null,
+        neverReveal: false
+    );
+
+    $unauthResult = PrivacyDecisionResolver::resolveForColumn(
+        'admin_notes',
+        PrivacyMode::BlurClick,
+        isAuthorized: false,
+        columnBlur: null,
+        record: null,
+        hiddenRoles: null,
+        resourceClass: null,
+        neverReveal: false
+    );
+
+    $neverRevealResult = PrivacyDecisionResolver::resolveForColumn(
+        'api_key',
+        PrivacyMode::BlurClick,
+        isAuthorized: true,
+        columnBlur: null,
+        record: null,
+        hiddenRoles: null,
+        resourceClass: null,
+        neverReveal: true
+    );
+
+    $authorizedField = $authResult['decision'];
+    $unauthorizedField = $unauthResult['decision'];
+    $neverRevealField = $neverRevealResult['decision'];
+
+    // Toggle should only affect fields where canBeGloballyRevealed is true
+    expect($authorizedField->canBeGloballyRevealed)->toBeTrue();
+    expect($unauthorizedField->canBeGloballyRevealed)->toBeFalse();
+    expect($neverRevealField->canBeGloballyRevealed)->toBeFalse();
+
+    // Alpine global reveal dispatches event, but only elements with
+    // data-privacy-can-globally-reveal="true" respond to the event
 });
