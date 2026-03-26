@@ -40,7 +40,8 @@ it('only reveals fields user is authorized for during global reveal', function (
 
 it('hiddenFromRoles prevents global reveal', function () {
     // Create a user with roles
-    $user = new class extends User {
+    $user = new class extends User
+    {
         public array $roles = ['guest'];
 
         public function hasRole(string $role): bool
@@ -50,7 +51,7 @@ it('hiddenFromRoles prevents global reveal', function () {
 
         public function hasAnyRole(array $roles): bool
         {
-            return !empty(array_intersect($roles, $this->roles));
+            return ! empty(array_intersect($roles, $this->roles));
         }
     };
     $user->id = 1;
@@ -92,7 +93,8 @@ it('revealNever prevents any reveal even for authorized users', function () {
 
 it('neverReveal combined with hiddenRoles prevents reveal', function () {
     // Create a user with roles
-    $user = new class extends User {
+    $user = new class extends User
+    {
         public array $roles = ['guest'];
 
         public function hasRole(string $role): bool
@@ -102,7 +104,7 @@ it('neverReveal combined with hiddenRoles prevents reveal', function () {
 
         public function hasAnyRole(array $roles): bool
         {
-            return !empty(array_intersect($roles, $this->roles));
+            return ! empty(array_intersect($roles, $this->roles));
         }
     };
     $user->id = 1;

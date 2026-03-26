@@ -74,8 +74,10 @@ it('authorizes using custom closure with full context', function () {
 
     $closure = fn ($user, $record) => $user->name === 'Admin' && $record?->id === 42;
 
-    $testRecord = new class extends Model {
+    $testRecord = new class extends Model
+    {
         protected $fillable = ['id'];
+
         public $id = 42;
     };
 
@@ -98,9 +100,12 @@ it('passes record to custom closure correctly', function () {
         return true;
     };
 
-    $testRecord = new class extends Model {
+    $testRecord = new class extends Model
+    {
         protected $fillable = ['id', 'name'];
+
         public $id = 42;
+
         public $name = 'Test Record';
     };
 
