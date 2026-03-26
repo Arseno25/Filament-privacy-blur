@@ -2,12 +2,10 @@
 
 use Arseno25\FilamentPrivacyBlur\DataTransferObjects\AuthorizationResult;
 use Arseno25\FilamentPrivacyBlur\Services\PrivacyAuthorizationService;
-use Arseno25\FilamentPrivacyBlur\Tests\TestCase;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
-
 
 // Note: Gate::forget() is not available in Laravel 11+
 // We define gates with unique names per test to avoid conflicts

@@ -6,12 +6,10 @@ use Arseno25\FilamentPrivacyBlur\FilamentPrivacyBlurPlugin;
 use Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver;
 use Arseno25\FilamentPrivacyBlur\Services\PrivacyAuthorizationService;
 use Arseno25\FilamentPrivacyBlur\Services\PrivacyMaskingService;
-use Arseno25\FilamentPrivacyBlur\Tests\TestCase;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
-
 
 // ============================================================================
 // authorizeRevealWith() & revealIfCan() Tests
