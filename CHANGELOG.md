@@ -2,8 +2,6 @@
 
 All notable changes to `filament-privacy-blur` will be documented in this file.
 
-## [Unreleased] - 2026-03-27
-
 ## v1.1.0 - 2026-03-27
 
 ### Added
