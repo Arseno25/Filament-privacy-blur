@@ -3,6 +3,9 @@ name: "Update Changelog"
 on:
   release:
     types: [released]
+  push:
+    tags:
+      - 'v*.*.*'
 
 permissions:
   contents: write
@@ -17,15 +20,23 @@ jobs:
         with:
           ref: main
 
-      - name: Update Changelog
+      - name: Update Changelog from Release
+        if: github.event_name == 'release'
         uses: stefanzweifel/changelog-updater-action@v1
         with:
           latest-version: ${{ github.event.release.name }}
           release-notes: ${{ github.event.release.body }}
 
+      - name: Update Changelog from Tag
+        if: github.event_name == 'push'
+        uses: stefanzweifel/changelog-updater-action@v1
+        with:
+          latest-version: ${{ github.ref_name }}
+          release-notes: "Release ${{ github.ref_name }}"
+
       - name: Commit updated CHANGELOG
         uses: stefanzweifel/git-auto-commit-action@v7
         with:
           branch: main
-          commit_message: Update CHANGELOG
+          commit_message: Update CHANGELOG for ${{ github.ref_name }}
           file_pattern: CHANGELOG.md

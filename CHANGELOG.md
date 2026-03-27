@@ -2,6 +2,51 @@
 
 All notable changes to `filament-privacy-blur` will be documented in this file.
 
+## [Unreleased] - 2026-03-27
+
+## v1.1.0 - 2026-03-27
+
+### Added
+
+- **Comprehensive Testing Coverage**
+  - 181 tests with 404 assertions
+  - Real `exceptPanels([...])` behavior proven through resolver flow
+  - Real export-context masking with actual server-side masking
+  - Real audit end-to-end with validation and database persistence
+  - Real toggle visibility backed by decision output
+
+### Changed
+
+- **Enhanced Test Suite**
+  - Strengthened panel exclusion tests proving real resolver behavior
+  - Strengthened export-context tests proving actual server-side masking
+  - Strengthened audit tests with validation and database field verification
+  - Strengthened toggle visibility tests proving real decision output
+
+- **Improved Workflow**
+  - GitHub Actions changelog workflow now supports both release and tag push events
+  - Better error handling for version detection
+
+### Security
+
+- **Proven Security Model**
+  - All 4 critical security behaviors now verified by real behavior tests
+  - Panel exclusion verified through actual PrivacyDecisionResolver output
+  - Export masking verified through actual applyMasking() method calls
+  - Audit logging verified through real controller/route/database behavior
+  - Toggle visibility verified through actual canBeGloballyRevealed decision attributes
+
+### Tested On
+
+- PHP: 8.2, 8.3, 8.4
+- Laravel: 11, 12
+- Filament: v4.x, v5.x
+- Pest: 181 tests passing with 404 assertions
+- PHPStan: Level 4, no errors (when memory limit allows)
+- Laravel Pint: Passing
+
+**Full Changelog**: https://github.com/Arseno25/filament-privacy-blur/commits/v1.1.0
+
 ## [Unreleased] - 2026-03-26
 
 ### Added
