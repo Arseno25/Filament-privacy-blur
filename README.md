@@ -1,5 +1,5 @@
 <h1 align="center">
-  <img src="https://banners.beyondco.de/Filament%20Privacy%20Blur.png" alt="Filament Privacy Blur">
+  <img src="https://banners.beyondco.de/Filament%20Privacy%20Blur.png?theme=light&packageManager=composer+require&packageName=Arseno25%2Ffilament-privacy-blur&pattern=temple&style=style_2&description=&md=1&showWatermark=0&fontSize=100px&images=eye-off&widths=800&heights=800" alt="Filament Privacy Blur">
 </h1>
 
 <p align="center">
