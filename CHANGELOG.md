@@ -2,6 +2,40 @@
 
 All notable changes to `filament-privacy-blur` will be documented in this file.
 
+## Update - 2026-04-18
+
+### v1.2.0 - 2026-04-18
+
+#### Added
+
+- **Dedicated masking traits** — `HandlesColumnMasking`, `HandlesFieldMasking`, `HandlesEntryMasking`, and shared `AppliesBlurFormatting` split out from `ColumnPrivacyMacros` for isolated testing and maintenance.
+- **Batch audit API** — `PrivacyAuditController` now accepts `{ batch: [...] }` payloads (max 100 entries) alongside the legacy single-entry format.
+- **Plugin config validation** — `defaultMode()` and `blurAmount()` now throw `InvalidArgumentException` on invalid input to fail fast during panel setup.
+- **Populated JS entry point** — `resources/js/index.js` now exports the Alpine component, producing a non-empty build output.
+
+#### Changed
+
+- **`ColumnPrivacyMacros` decomposition** — 412-line class reduced to 299 lines by extracting `PrivacyBlurRenderer`, `PrivacyContextDetector`, and per-component traits.
+- **Alpine audit pipeline** — inline script now buffers reveal events in a queue, flushes with a 2s debounce using `keepalive: true`, and drains on `beforeunload`.
+
+#### Performance
+
+- **Request-scoped memoization** — `PrivacyConfigResolver` caches per-panel config lookups via `remember()` / `flushCache()`, cutting redundant `Filament::getCurrentPanel()` and config reads across table/form/infolist rendering on the same request.
+- **GPU-accelerated blur** — added `will-change: filter` and `transform: translateZ(0)` to the blur CSS for smoother compositing.
+- **Reduced HTTP chatter** — batched audit logging replaces per-reveal `fetch()` calls.
+
+#### Security
+
+- **Composer audit gate** — pinned advisories `PKSA-5jz8-6tcw-pbk4` and `PKSA-z3gr-8qht-p93v` (phpunit 11.5, test-runner-only, requires PHP 8.3+ for upstream fix) ignored in `composer.json` with documented rationale; CI uses `--no-audit` on the resolver path.
+
+#### Tested On
+
+- PHP: 8.2, 8.3, 8.4
+- Laravel: 11, 12
+- Filament: v4.x, v5.x
+
+**Full Changelog**: https://github.com/Arseno25/Filament-privacy-blur/compare/v1.1.0...v1.2.0
+
 ## v1.2.0 - 2026-04-18
 
 Release v1.2.0
