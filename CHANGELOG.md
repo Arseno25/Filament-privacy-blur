@@ -2,6 +2,10 @@
 
 All notable changes to `filament-privacy-blur` will be documented in this file.
 
+## v1.2.0 - 2026-04-18
+
+Release v1.2.0
+
 ## v1.1.0 - 2026-03-27
 
 ### Added
@@ -12,18 +16,22 @@ All notable changes to `filament-privacy-blur` will be documented in this file.
   - Real export-context masking with actual server-side masking
   - Real audit end-to-end with validation and database persistence
   - Real toggle visibility backed by decision output
+  
 
 ### Changed
 
 - **Enhanced Test Suite**
+  
   - Strengthened panel exclusion tests proving real resolver behavior
   - Strengthened export-context tests proving actual server-side masking
   - Strengthened audit tests with validation and database field verification
   - Strengthened toggle visibility tests proving real decision output
-
+  
 - **Improved Workflow**
+  
   - GitHub Actions changelog workflow now supports both release and tag push events
   - Better error handling for version detection
+  
 
 ### Security
 
@@ -33,6 +41,7 @@ All notable changes to `filament-privacy-blur` will be documented in this file.
   - Export masking verified through actual applyMasking() method calls
   - Audit logging verified through real controller/route/database behavior
   - Toggle visibility verified through actual canBeGloballyRevealed decision attributes
+  
 
 ### Tested On
 
