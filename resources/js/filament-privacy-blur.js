@@ -1,3 +1,39 @@
+const auditQueue = []
+let auditFlushTimer = null
+const AUDIT_DEBOUNCE_MS = 2000
+
+function flushAuditQueue() {
+    if (auditQueue.length === 0) return
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+    if (!csrfToken) return
+
+    const auditUrl = window.__privacyBlurAuditUrl || '/filament-privacy-blur/audit'
+    const batch = auditQueue.splice(0, auditQueue.length)
+
+    fetch(auditUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken,
+        },
+        body: JSON.stringify({ batch }),
+        keepalive: true,
+    }).catch(() => {
+        // Silently fail if audit logging fails
+    })
+}
+
+function queueAudit(payload) {
+    auditQueue.push(payload)
+    clearTimeout(auditFlushTimer)
+    auditFlushTimer = setTimeout(flushAuditQueue, AUDIT_DEBOUNCE_MS)
+}
+
+if (typeof window !== 'undefined') {
+    window.addEventListener('beforeunload', flushAuditQueue)
+}
+
 export default function (Alpine) {
     Alpine.data('filamentPrivacyBlur', () => ({
         isRevealed: false,
@@ -5,65 +41,38 @@ export default function (Alpine) {
         timeout: null,
 
         init() {
-            // Listen for global reveal toggle events
             this.$el.addEventListener('toggle-privacy-blur', () => {
-                this.isGlobalRevealed = !this.isGlobalRevealed;
-            });
+                this.isGlobalRevealed = !this.isGlobalRevealed
+            })
         },
 
         toggle() {
-            this.isRevealed = !this.isRevealed;
+            this.isRevealed = !this.isRevealed
 
             if (this.isRevealed) {
-                clearTimeout(this.timeout);
+                clearTimeout(this.timeout)
                 this.timeout = setTimeout(() => {
-                    this.isRevealed = false;
-                }, 5000);
+                    this.isRevealed = false
+                }, 5000)
 
-                // Audit logging if enabled
                 if (this.$el.dataset.privacyAudit === 'true') {
-                    this.logReveal();
+                    queueAudit({
+                        column: this.$el.dataset.privacyColumn,
+                        record_id: this.$el.dataset.privacyRecordId || '',
+                        mode: this.$el.dataset.privacyMode || 'blur_click',
+                        resource: this.$el.dataset.privacyResource || '',
+                        panel: this.$el.dataset.privacyPanel || '',
+                    })
                 }
             }
         },
 
-        logReveal() {
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-            const column = this.$el.dataset.privacyColumn;
-            const recordId = this.$el.dataset.privacyRecordId || '';
-            const mode = this.$el.dataset.privacyMode || 'blur_click';
-            const resource = this.$el.dataset.privacyResource || '';
-            const panel = this.$el.dataset.privacyPanel || '';
-
-            // Use a relative URL resolved at runtime — the audit URL is rendered
-            // into the alpine-script.blade.php. This Alpine data component is a
-            // fallback/alternative approach; the inline script handles most cases.
-            const auditUrl = window.__privacyBlurAuditUrl || '/filament-privacy-blur/audit';
-
-            fetch(auditUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken
-                },
-                body: JSON.stringify({
-                    column: column,
-                    record_id: recordId,
-                    mode: mode,
-                    resource: resource,
-                    panel: panel,
-                })
-            }).catch(() => {
-                // Silently fail if audit logging fails
-            });
-        },
-
         get isVisible() {
-            return this.isRevealed || this.isGlobalRevealed;
+            return this.isRevealed || this.isGlobalRevealed
         },
 
         get blurClass() {
-            return this.isVisible ? '' : 'o-privacy-blur pb-' + (this.$el.dataset.privacyBlur || 4);
-        }
-    }));
+            return this.isVisible ? '' : 'o-privacy-blur pb-' + (this.$el.dataset.privacyBlur || 4)
+        },
+    }))
 }

@@ -3,6 +3,7 @@
 namespace Arseno25\FilamentPrivacyBlur\Tests;
 
 use Arseno25\FilamentPrivacyBlur\FilamentPrivacyBlurServiceProvider;
+use Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyConfigResolver;
 use BladeUI\Heroicons\BladeHeroiconsServiceProvider;
 use BladeUI\Icons\BladeIconsServiceProvider;
 use Filament\Actions\ActionsServiceProvider;
@@ -28,6 +29,8 @@ class TestCase extends Orchestra
     protected function setUp(): void
     {
         parent::setUp();
+
+        PrivacyConfigResolver::flushCache();
 
         Factory::guessFactoryNamesUsing(
             fn (string $modelName) => 'Arseno25\\FilamentPrivacyBlur\\Database\\Factories\\' . class_basename($modelName) . 'Factory'

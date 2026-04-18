@@ -4,6 +4,10 @@
     user-select: none;
     pointer-events: auto;
     transition: filter 0.3s ease, color 0.3s ease, text-shadow 0.3s ease;
+    /* Hint GPU compositing so the filter transition runs on a separate layer */
+    will-change: filter;
+    /* Promote to its own layer to avoid repainting siblings on reveal */
+    transform: translateZ(0);
 }
 
 /* Blur amounts - different levels of blur intensity (kept subtle) */

@@ -21,6 +21,8 @@ jobs:
 
       - name: Install composer dependencies
         uses: ramsey/composer-install@v4
+        with:
+          composer-options: "--no-audit"
 
       - name: Create PHPStan cache directory
         run: mkdir -p build/phpstan
