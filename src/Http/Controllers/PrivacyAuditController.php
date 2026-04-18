@@ -15,25 +15,42 @@ class PrivacyAuditController extends Controller
             return response()->json(['status' => 'skipped']);
         }
 
-        $validated = $request->validate([
-            'column' => 'required|string',
-            'record_id' => 'nullable|string',
-            'mode' => 'required|string',
-            'resource' => 'nullable|string',
-            'panel' => 'nullable|string',
-        ]);
+        $entries = $request->has('batch')
+            ? $request->validate([
+                'batch' => 'required|array|max:100',
+                'batch.*.column' => 'required|string',
+                'batch.*.record_id' => 'nullable|string',
+                'batch.*.mode' => 'required|string',
+                'batch.*.resource' => 'nullable|string',
+                'batch.*.panel' => 'nullable|string',
+                'batch.*.tenant_id' => 'nullable|string',
+            ])['batch']
+            : [$request->validate([
+                'column' => 'required|string',
+                'record_id' => 'nullable|string',
+                'mode' => 'required|string',
+                'resource' => 'nullable|string',
+                'panel' => 'nullable|string',
+                'tenant_id' => 'nullable|string',
+            ])];
 
-        PrivacyAuditLogger::logReveal(
-            columnName: $validated['column'],
-            revealMode: $validated['mode'],
-            recordKey: $validated['record_id'] ?? null,
-            resource: $validated['resource'] ?? null,
-            page: url()->previous(),
-            panel: $validated['panel'] ?? null,
-            ipAddress: $request->ip(),
-            userAgent: $request->userAgent()
-        );
+        $page = url()->previous();
+        $ip = $request->ip();
+        $ua = $request->userAgent();
 
-        return response()->json(['status' => 'success']);
+        foreach ($entries as $entry) {
+            PrivacyAuditLogger::logReveal(
+                columnName: $entry['column'],
+                revealMode: $entry['mode'],
+                recordKey: $entry['record_id'] ?? null,
+                resource: $entry['resource'] ?? null,
+                page: $page,
+                panel: $entry['panel'] ?? null,
+                ipAddress: $ip,
+                userAgent: $ua
+            );
+        }
+
+        return response()->json(['status' => 'success', 'count' => count($entries)]);
     }
 }

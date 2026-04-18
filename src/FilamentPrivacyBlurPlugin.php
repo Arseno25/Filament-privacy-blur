@@ -2,11 +2,13 @@
 
 namespace Arseno25\FilamentPrivacyBlur;
 
+use Arseno25\FilamentPrivacyBlur\Enums\PrivacyMode;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 use Filament\Support\Facades\FilamentView;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Support\Facades\View;
+use InvalidArgumentException;
 
 class FilamentPrivacyBlurPlugin implements Plugin
 {
@@ -86,6 +88,14 @@ class FilamentPrivacyBlurPlugin implements Plugin
 
     public function defaultMode(string $mode): static
     {
+        if (PrivacyMode::tryFrom($mode) === null) {
+            $valid = implode(', ', array_column(PrivacyMode::cases(), 'value'));
+
+            throw new InvalidArgumentException(
+                "Invalid privacy mode '{$mode}'. Valid modes: {$valid}."
+            );
+        }
+
         $this->defaultMode = $mode;
 
         return $this;
@@ -93,6 +103,12 @@ class FilamentPrivacyBlurPlugin implements Plugin
 
     public function blurAmount(int $amount): static
     {
+        if ($amount < 0 || $amount > 20) {
+            throw new InvalidArgumentException(
+                "Blur amount must be between 0 and 20, got {$amount}."
+            );
+        }
+
         $this->blurAmount = $amount;
 
         return $this;

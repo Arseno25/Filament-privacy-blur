@@ -9,6 +9,21 @@ use Filament\Facades\Filament;
 class PrivacyConfigResolver
 {
     /**
+     * Request-scoped memoization cache keyed by panel id.
+     *
+     * @var array<string, array<string, mixed>>
+     */
+    private static array $cache = [];
+
+    /**
+     * Reset the memoization cache. Intended for tests and between requests.
+     */
+    public static function flushCache(): void
+    {
+        self::$cache = [];
+    }
+
+    /**
      * Get the plugin instance from the current panel.
      */
     protected static function getPlugin(): ?FilamentPrivacyBlurPlugin
@@ -19,31 +34,55 @@ class PrivacyConfigResolver
             return null;
         }
 
+        $panelId = $panel->getId();
+
+        if (array_key_exists('plugin', self::$cache[$panelId] ?? [])) {
+            return self::$cache[$panelId]['plugin'];
+        }
+
         try {
             /** @var FilamentPrivacyBlurPlugin $plugin */
             $plugin = $panel->getPlugin('filament-privacy-blur');
-
-            return $plugin;
-        } catch (\Throwable $e) {
-            return null;
+        } catch (\Throwable) {
+            $plugin = null;
         }
+
+        self::$cache[$panelId]['plugin'] = $plugin;
+
+        return $plugin;
     }
 
     /**
-     * Determine if privacy features are globally enabled for the current panel.
-     * Returns true if enabled in plugin OR if config doesn't explicitly disable it.
+     * Remember a computed value under a namespaced cache slot for the current panel.
+     *
+     * @template T
+     *
+     * @param  callable(): T  $resolver
+     * @return T
      */
-    public static function isEnabledGlobally(): bool
+    private static function remember(string $key, callable $resolver): mixed
     {
-        $plugin = self::getPlugin();
+        $panel = Filament::getCurrentPanel();
+        $panelId = $panel?->getId() ?? '__no_panel__';
 
-        if ($plugin) {
-            return $plugin->getIsEnabled();
+        if (array_key_exists($key, self::$cache[$panelId] ?? [])) {
+            return self::$cache[$panelId][$key];
         }
 
-        // Fall back to config if no panel context (e.g., during testing or CLI)
-        // Default to enabled if not explicitly disabled
-        return config('filament-privacy-blur.enabled', true);
+        return self::$cache[$panelId][$key] = $resolver();
+    }
+
+    public static function isEnabledGlobally(): bool
+    {
+        return self::remember('enabled_globally', function () {
+            $plugin = self::getPlugin();
+
+            if ($plugin) {
+                return $plugin->getIsEnabled();
+            }
+
+            return config('filament-privacy-blur.enabled', true);
+        });
     }
 
     /**
@@ -55,11 +94,13 @@ class PrivacyConfigResolver
             return $columnMode;
         }
 
-        $plugin = self::getPlugin();
-        $panelMode = $plugin ? $plugin->getDefaultMode() : null;
-        $defaultMode = $panelMode ?? config('filament-privacy-blur.default_mode', 'blur_click');
+        return self::remember('default_mode', function () {
+            $plugin = self::getPlugin();
+            $panelMode = $plugin?->getDefaultMode();
+            $defaultMode = $panelMode ?? config('filament-privacy-blur.default_mode', 'blur_click');
 
-        return PrivacyMode::tryFrom($defaultMode) ?? PrivacyMode::BlurClick;
+            return PrivacyMode::tryFrom($defaultMode) ?? PrivacyMode::BlurClick;
+        });
     }
 
     public static function resolveBlurAmount(?int $columnBlur = null): int
@@ -68,10 +109,12 @@ class PrivacyConfigResolver
             return $columnBlur;
         }
 
-        $plugin = self::getPlugin();
-        $panelBlur = $plugin ? $plugin->getBlurAmount() : null;
+        return self::remember('default_blur_amount', function () {
+            $plugin = self::getPlugin();
+            $panelBlur = $plugin?->getBlurAmount();
 
-        return $panelBlur ?? config('filament-privacy-blur.default_blur_amount', 4);
+            return $panelBlur ?? config('filament-privacy-blur.default_blur_amount', 4);
+        });
     }
 
     public static function resolveMaskStrategy(?string $columnStrategy = null): string
@@ -80,42 +123,40 @@ class PrivacyConfigResolver
             return $columnStrategy;
         }
 
-        return config('filament-privacy-blur.default_mask_strategy', 'generic');
+        return self::remember(
+            'default_mask_strategy',
+            fn () => config('filament-privacy-blur.default_mask_strategy', 'generic')
+        );
     }
 
-    /**
-     * Check if a column name is in the globally excepted list.
-     */
     public static function isColumnExcepted(string $columnName): bool
     {
-        $plugin = self::getPlugin();
-        $excepted = $plugin ? $plugin->getExceptColumns() : [];
+        $excepted = self::remember('except_columns', function () {
+            $plugin = self::getPlugin();
+            $excepted = $plugin ? $plugin->getExceptColumns() : [];
 
-        if (empty($excepted)) {
-            $excepted = config('filament-privacy-blur.except_columns', []);
-        }
+            return empty($excepted)
+                ? config('filament-privacy-blur.except_columns', [])
+                : $excepted;
+        });
 
-        return in_array($columnName, $excepted);
+        return in_array($columnName, $excepted, true);
     }
 
-    /**
-     * Check if a resource class is in the globally excepted list.
-     */
     public static function isResourceExcepted(string $resourceClass): bool
     {
-        $plugin = self::getPlugin();
-        $excepted = $plugin ? $plugin->getExceptResources() : [];
+        $excepted = self::remember('except_resources', function () {
+            $plugin = self::getPlugin();
+            $excepted = $plugin ? $plugin->getExceptResources() : [];
 
-        if (empty($excepted)) {
-            $excepted = config('filament-privacy-blur.except_resources', []);
-        }
+            return empty($excepted)
+                ? config('filament-privacy-blur.except_resources', [])
+                : $excepted;
+        });
 
-        return in_array($resourceClass, $excepted);
+        return in_array($resourceClass, $excepted, true);
     }
 
-    /**
-     * Check if the current panel is in the globally excepted list.
-     */
     public static function isPanelExcepted(): bool
     {
         $panel = Filament::getCurrentPanel();
@@ -123,23 +164,24 @@ class PrivacyConfigResolver
             return false;
         }
 
-        $plugin = self::getPlugin();
-        $excepted = $plugin ? $plugin->getExceptPanels() : [];
+        return self::remember('panel_excepted', function () use ($panel) {
+            $plugin = self::getPlugin();
+            $excepted = $plugin ? $plugin->getExceptPanels() : [];
 
-        if (empty($excepted)) {
-            $excepted = config('filament-privacy-blur.except_panels', []);
-        }
+            if (empty($excepted)) {
+                $excepted = config('filament-privacy-blur.except_panels', []);
+            }
 
-        return in_array($panel->getId(), $excepted);
+            return in_array($panel->getId(), $excepted, true);
+        });
     }
 
-    /**
-     * Is audit enabled — respects both plugin-level enableAudit() and config.
-     */
     public static function isAuditEnabled(): bool
     {
+        // Not cached: called at most once per audit request, and tests
+        // flip the flag between requests in the same process.
         $plugin = self::getPlugin();
-        $pluginAudit = $plugin ? $plugin->getAuditEnabled() : null;
+        $pluginAudit = $plugin?->getAuditEnabled();
 
         return $pluginAudit ?? config('filament-privacy-blur.audit_enabled', false);
     }
