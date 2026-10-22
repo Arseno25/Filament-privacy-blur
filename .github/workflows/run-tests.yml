@@ -91,3 +91,11 @@ jobs:
 
       - name: Execute tests
         run: vendor/bin/pest --ci
+
+      - name: Laravel Pint style validation
+        if: matrix.php == '8.4' && matrix.laravel == '12.*' && matrix.filament == '5.*'
+        run: vendor/bin/pint --test
+
+      - name: PHPStan static analysis
+        if: matrix.php == '8.4' && matrix.laravel == '12.*' && matrix.filament == '5.*'
+        run: vendor/bin/phpstan analyse --no-progress
