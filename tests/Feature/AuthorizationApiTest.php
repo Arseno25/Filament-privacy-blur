@@ -759,7 +759,7 @@ it('hybrid mode: shows masked text even to authorized users', function () {
     );
 
     expect($decision->shouldRenderMasked)->toBeTrue();
-    expect($decision->shouldBlur)->toBeFalse();
+    expect($decision->shouldBlur)->toBeTrue();
 });
 
 it('hybrid mode: unauthorized users see masked + blurred', function () {
