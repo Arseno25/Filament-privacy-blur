@@ -266,7 +266,7 @@ it('toggle correctly shows when hybrid mode field is authorized for global revea
 
     expect($hybridDecision['reveal_enabled'])->toBeFalse(); // Hybrid doesn't support interactive reveal
     expect($hybridDecision['should_mask'])->toBeTrue(); // Shows masked to authorized users
-    expect($hybridDecision['should_blur'])->toBeFalse(); // No blur overlay, just masking
+    expect($hybridDecision['should_blur'])->toBeTrue(); // Blur is applied to masked content
 });
 
 // ============================================================================
