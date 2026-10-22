@@ -26,7 +26,7 @@
 - **Global Reveal Toggle** — Eye icon in topbar to reveal all authorized fields instantly
 - **Authorization-First** — Full integration with Laravel Gates, Policies, and permissions
 - **Audit Logging** — Optional tracking of reveal actions with user, IP, and context
-- **Export Safety** — Automatic masking during Filament exports
+- **Export Safety** — Explicit server-side masking on Filament ExportColumn definitions
 
 ### What It Does NOT Do
 
@@ -324,7 +324,7 @@ TextColumn::make('email')
 
 ### `hybrid` — Maximum Protection
 
-- **Authorized**: 🎭 Masked text
+- **Authorized**: 🎭 Masked + 🔒 blurred
 - **Unauthorized**: 🎭 Masked + 🔒 blurred
 - **Raw data in DOM**: Masked only
 
@@ -354,7 +354,7 @@ TextColumn::make('public_field')->private()->privacyMode('disabled'),
 | `blur_hover` | 🔒 Blur → Hover | 🔒 Blur | Yes (auth only) | Yes (auth only) | Yes |
 | `blur_auth` | Plain | 🔒 Blur | No | No | Yes |
 | `mask` | Plain | 🎭 Masked | No | No | No |
-| `hybrid` | 🎭 Masked | 🎭 Masked + 🔒 Blur | No | No | Masked only |
+| `hybrid` | 🎭 Masked + 🔒 Blur | 🎭 Masked + 🔒 Blur | No | No | Masked only |
 
 ## Global Reveal Toggle
 
@@ -464,7 +464,18 @@ CSS blur only affects visual rendering in the browser. When exporting data to CS
 
 ### How Export Context is Handled
 
-The package automatically detects Filament export contexts and:
+For Filament `Exporter` classes, explicitly protect each sensitive `ExportColumn` using `->private()` and optionally `->maskUsing('email')`. Table column configuration does not automatically propagate to independent export definitions.
+
+```php
+use Filament\Actions\Exports\ExportColumn;
+
+ExportColumn::make('email')->private()->maskUsing('email'),
+ExportColumn::make('phone')->private()->maskUsing('phone'),
+```
+
+`ExportColumn::private()` masks with the `generic` strategy by default. `maskUsing()` selects a specific server-side strategy. Export values are never protected by CSS blur alone.
+
+For table/infolist formatting, the package detects export contexts and:
 1. **Replaces blur with masking** — `blur_click` fields are masked using the configured strategy
 2. **Preserves mask strategies** — Custom masking strategies are applied during export
 3. **Protects sensitive data** — Original values are never included in exports
