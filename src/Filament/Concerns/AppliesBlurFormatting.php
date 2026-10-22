@@ -45,7 +45,11 @@ trait AppliesBlurFormatting
             $decision = ColumnPrivacyMacros::resolveDecisionForField($component, $record, $meta);
 
             if ($decision->shouldRenderMasked) {
-                return PrivacyBlurRenderer::applyMasking($state, $record, $meta['mask_strategy'] ?? null);
+                $masked = PrivacyBlurRenderer::applyMasking($state, $record, $meta['mask_strategy'] ?? null);
+
+                return $decision->shouldBlur && ! PrivacyContextDetector::isExportContext()
+                    ? PrivacyBlurRenderer::renderBlurSpan($decision, $masked)
+                    : $masked;
             }
 
             // Exports can't render blur — fall back to masking
