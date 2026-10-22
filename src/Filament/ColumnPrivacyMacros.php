@@ -28,25 +28,38 @@ class ColumnPrivacyMacros
     {
         PrivacyMetadataHelper::init();
 
-        // ExportColumn is independent of table columns and needs server-side redaction.
+        // ExportColumn is not a table Column: exports must be masked on the server.
         ExportColumn::macro('private', function (?bool $condition = true) {
             /** @var ExportColumn $this */
-            if ($condition) {
-                $this->formatStateUsing(function ($state, ?Model $record = null) {
-                    return PrivacyBlurRenderer::applyMasking($state, $record, 'generic');
-                });
+            if (! $condition) {
+                return $this;
             }
+
+            PrivacyMetadataHelper::set($this, ['privacy_export_enabled' => true]);
+
+            $column = $this;
+
+            $this->formatStateUsing(function (mixed $state, ?Model $record = null) use ($column) {
+                $meta = PrivacyMetadataHelper::get($column);
+
+                return PrivacyBlurRenderer::applyMasking(
+                    $state,
+                    $record,
+                    $meta['mask_strategy'] ?? null
+                );
+            });
+
+            // Filament exports may contain formula-like input from user data.
+            $this->preventFormulaInjection();
 
             return $this;
         });
 
+        // A strategy alone does not mark an export column private, consistent
+        // with the Column/Entry/Field fluent API. Order is not significant.
         ExportColumn::macro('maskUsing', function (Closure | string $strategy) {
             /** @var ExportColumn $this */
-            $this->formatStateUsing(function ($state, ?Model $record = null) use ($strategy) {
-                return PrivacyBlurRenderer::applyMasking($state, $record, $strategy);
-            });
-
-            return $this;
+            return PrivacyMetadataHelper::set($this, ['mask_strategy' => $strategy]);
         });
 
         $macroMethods = self::buildMacroMethods();
