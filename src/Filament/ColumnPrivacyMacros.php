@@ -202,20 +202,22 @@ class ColumnPrivacyMacros
     private static function privateMacro(): Closure
     {
         return function (?bool $condition = true) {
-            /** @var Column|Entry|Field $this */
+            /** @var Column|Entry|Field $component */
+            $component = $this;
+
             if (! $condition) {
-                return $this;
+                return $component;
             }
 
-            if ($this instanceof Field) {
-                ColumnPrivacyMacros::applyToField($this);
-            } elseif ($this instanceof Column) {
-                ColumnPrivacyMacros::applyToColumn($this);
-            } elseif ($this instanceof Entry) {
-                ColumnPrivacyMacros::applyToEntry($this);
+            if ($component instanceof Field) {
+                ColumnPrivacyMacros::applyToField($component);
+            } elseif ($component instanceof Column) {
+                ColumnPrivacyMacros::applyToColumn($component);
+            } elseif ($component instanceof Entry) {
+                ColumnPrivacyMacros::applyToEntry($component);
             }
 
-            return $this;
+            return $component;
         };
     }
 
