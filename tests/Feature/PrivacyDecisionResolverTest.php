@@ -129,7 +129,7 @@ it('hybrid mode shows masked to authorized user', function () {
     $decision = PrivacyDecisionResolver::resolveForColumn('email', PrivacyMode::Hybrid, true);
 
     expect($decision['should_mask'])->toBeTrue()
-        ->and($decision['should_blur'])->toBeFalse();
+        ->and($decision['should_blur'])->toBeTrue();
 });
 
 it('hybrid mode blurs and masks for unauthorized user', function () {

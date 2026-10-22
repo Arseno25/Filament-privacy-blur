@@ -26,7 +26,7 @@
 - **Global Reveal Toggle** — Eye icon in topbar to reveal all authorized fields instantly
 - **Authorization-First** — Full integration with Laravel Gates, Policies, and permissions
 - **Audit Logging** — Optional tracking of reveal actions with user, IP, and context
-- **Export Safety** — Automatic masking during Filament exports
+- **Export Safety** — Explicit server-side masking on Filament ExportColumn definitions
 
 ### What It Does NOT Do
 
@@ -56,7 +56,7 @@ This package provides a convenient, authorization-aware way to add visual privac
 - **🎭 8 Mask Strategies** — email, phone, NIK, full name, API key, address, currency, generic
 - **🛡️ Authorization-First** — Secure-by-default using Laravel Gates, Policies, and abilities
 - **📊 Audit Logging** — Track reveal actions with user, IP address, user agent, and resource context
-- **📤 Export Safety** — Automatic masking during Filament exports
+- **📤 Export Safety** — Opt-in server-side masking for sensitive Filament `ExportColumn` definitions
 - **🎛️ Per-Panel Config** — Exclude specific panels or customize settings per panel
 
 ## Requirements
@@ -324,7 +324,7 @@ TextColumn::make('email')
 
 ### `hybrid` — Maximum Protection
 
-- **Authorized**: 🎭 Masked text
+- **Authorized**: 🎭 Masked + 🔒 blurred
 - **Unauthorized**: 🎭 Masked + 🔒 blurred
 - **Raw data in DOM**: Masked only
 
@@ -354,7 +354,7 @@ TextColumn::make('public_field')->private()->privacyMode('disabled'),
 | `blur_hover` | 🔒 Blur → Hover | 🔒 Blur | Yes (auth only) | Yes (auth only) | Yes |
 | `blur_auth` | Plain | 🔒 Blur | No | No | Yes |
 | `mask` | Plain | 🎭 Masked | No | No | No |
-| `hybrid` | 🎭 Masked | 🎭 Masked + 🔒 Blur | No | No | Masked only |
+| `hybrid` | 🎭 Masked + 🔒 Blur | 🎭 Masked + 🔒 Blur | No | No | Masked only |
 
 ## Global Reveal Toggle
 
@@ -464,21 +464,33 @@ CSS blur only affects visual rendering in the browser. When exporting data to CS
 
 ### How Export Context is Handled
 
-The package automatically detects Filament export contexts and:
-1. **Replaces blur with masking** — `blur_click` fields are masked using the configured strategy
-2. **Preserves mask strategies** — Custom masking strategies are applied during export
-3. **Protects sensitive data** — Original values are never included in exports
+For Filament `Exporter` classes, explicitly protect each sensitive `ExportColumn` using `->private()` and optionally `->maskUsing('email')`. Table column configuration does not automatically propagate to independent export definitions.
+
+```php
+use Filament\Actions\Exports\ExportColumn;
+
+ExportColumn::make('email')->private()->maskUsing('email'),
+ExportColumn::make('phone')->private()->maskUsing('phone'),
+```
+
+`ExportColumn::private()` masks with the `generic` strategy by default; `maskUsing()` selects a server-side strategy. Both `->private()->maskUsing('email')` and `->maskUsing('email')->private()` work. Calling `maskUsing()` without `private()` does **not** enable protection; `private(false)` deliberately leaves values unchanged. Sensitive values are not protected by CSS blur in exports.
+
+**Important:** In an `Exporter`, explicitly opt in for **each** sensitive `ExportColumn`. The privacy settings on a table `TextColumn` do not automatically carry over to the export schema. Put `private()` after any custom `formatStateUsing()` callback, because Filament supports only one active formatter and a later formatter can replace the masking callback. For untrusted string values, private export columns also enable Filament's formula-injection guard for CSV/XLSX output.
+
+Table/infolist formatting and dedicated Filament exports are **separate pipelines**. The package retains masking fallback for table/infolist formatters executed in export contexts, but that does not replace explicit `ExportColumn::private()` calls. Always review exported columns for sensitive values.
 
 ### Export Behavior Examples
 
 ```php
-// In browser: Shows blurred with click-to-reveal
-// In export: Shows as "j***e@example.com"
+// In your Filament table: browser-only visual blur.
 TextColumn::make('email')->private()->maskUsing('email'),
 
-// In browser: Shows blurred with click-to-reveal
-// In export: Shows as "0812****7890"
-TextColumn::make('phone')->private()->maskUsing('phone'),
+// In your independent Exporter: server-side redaction.
+ExportColumn::make('email')->private()->maskUsing('email'),
+// e.g., johndoe@example.com -> j*****e@example.com
+
+ExportColumn::make('phone')->private()->maskUsing('phone'),
+// e.g., 081234567890 -> 0812****7890
 ```
 
 ## Security Limitations
@@ -728,9 +740,11 @@ return [
 | Component | Supported Versions |
 |-----------|-------------------|
 | **PHP** | 8.2, 8.3, 8.4 |
-| **Laravel** | 11, 12 |
+| **Laravel** | 11, 12 (see advisory note below) |
 | **Filament** | v4.x, v5.x |
 | **Alpine.js** | Bundled with Filament |
+
+**Laravel 11 security note:** Current Composer security advisories may block every available Laravel 11 version in the CI dependency matrix. The GitHub Actions Laravel 11 compatibility jobs apply a **CI-only, per-command** advisory-block override, report the outstanding advisories, and execute tests in temporary runners. This does **not** remediate those vulnerabilities and is **not** recommended for production or user installations. Production dependency security checks remain enabled; use patched supported framework versions where possible.
 
 ### Package Integration
 

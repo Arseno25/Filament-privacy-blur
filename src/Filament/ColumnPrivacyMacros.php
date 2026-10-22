@@ -11,6 +11,7 @@ use Arseno25\FilamentPrivacyBlur\Helpers\PrivacyMetadataHelper;
 use Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver;
 use Arseno25\FilamentPrivacyBlur\Services\PrivacyAuthorizationService;
 use Closure;
+use Filament\Actions\Exports\ExportColumn;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Field;
 use Filament\Infolists\Components\Entry;
@@ -26,6 +27,40 @@ class ColumnPrivacyMacros
     public static function boot(): void
     {
         PrivacyMetadataHelper::init();
+
+        // ExportColumn is not a table Column: exports must be masked on the server.
+        ExportColumn::macro('private', function (?bool $condition = true) {
+            /** @var ExportColumn $this */
+            if (! $condition) {
+                return $this;
+            }
+
+            PrivacyMetadataHelper::set($this, ['privacy_export_enabled' => true]);
+
+            $column = $this;
+
+            $this->formatStateUsing(function (mixed $state, ?Model $record = null) use ($column) {
+                $meta = PrivacyMetadataHelper::get($column);
+
+                return PrivacyBlurRenderer::applyMasking(
+                    $state,
+                    $record,
+                    $meta['mask_strategy'] ?? null
+                );
+            });
+
+            // Filament exports may contain formula-like input from user data.
+            $this->preventFormulaInjection();
+
+            return $this;
+        });
+
+        // A strategy alone does not mark an export column private, consistent
+        // with the Column/Entry/Field fluent API. Order is not significant.
+        ExportColumn::macro('maskUsing', function (Closure | string $strategy) {
+            /** @var ExportColumn $this */
+            return PrivacyMetadataHelper::set($this, ['mask_strategy' => $strategy]);
+        });
 
         $macroMethods = self::buildMacroMethods();
 
@@ -167,20 +202,22 @@ class ColumnPrivacyMacros
     private static function privateMacro(): Closure
     {
         return function (?bool $condition = true) {
-            /** @var Column|Entry|Field $this */
+            /** @var Column|Entry|Field $component */
+            $component = $this;
+
             if (! $condition) {
-                return $this;
+                return $component;
             }
 
-            if ($this instanceof Field) {
-                ColumnPrivacyMacros::applyToField($this);
-            } elseif ($this instanceof Column) {
-                ColumnPrivacyMacros::applyToColumn($this);
-            } elseif ($this instanceof Entry) {
-                ColumnPrivacyMacros::applyToEntry($this);
+            if ($component instanceof Field) {
+                ColumnPrivacyMacros::applyToField($component);
+            } elseif ($component instanceof Column) {
+                ColumnPrivacyMacros::applyToColumn($component);
+            } elseif ($component instanceof Entry) {
+                ColumnPrivacyMacros::applyToEntry($component);
             }
 
-            return $this;
+            return $component;
         };
     }
 
@@ -280,7 +317,6 @@ class ColumnPrivacyMacros
             'revealNever' => function () {
                 /** @var Column|Entry|Field $this */
                 return PrivacyMetadataHelper::set($this, [
-                    'privacy_mode' => PrivacyMode::Blur,
                     'privacy_never_reveal' => true,
                 ]);
             },

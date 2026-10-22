@@ -110,7 +110,7 @@ final class PrivacyDecision
             PrivacyMode::Hybrid => new self(
                 canViewRaw: false,
                 shouldRenderMasked: true,
-                shouldBlur: false,
+                shouldBlur: true,
                 canRevealInteractively: false,
                 canBeGloballyRevealed: false,
                 shouldAuditReveal: false,
