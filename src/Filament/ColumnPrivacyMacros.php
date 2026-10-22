@@ -11,6 +11,7 @@ use Arseno25\FilamentPrivacyBlur\Helpers\PrivacyMetadataHelper;
 use Arseno25\FilamentPrivacyBlur\Resolvers\PrivacyDecisionResolver;
 use Arseno25\FilamentPrivacyBlur\Services\PrivacyAuthorizationService;
 use Closure;
+use Filament\Actions\Exports\ExportColumn;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Field;
 use Filament\Infolists\Components\Entry;
@@ -26,6 +27,27 @@ class ColumnPrivacyMacros
     public static function boot(): void
     {
         PrivacyMetadataHelper::init();
+
+        // ExportColumn is independent of table columns and needs server-side redaction.
+        ExportColumn::macro('private', function (?bool $condition = true) {
+            /** @var ExportColumn $this */
+            if ($condition) {
+                $this->formatStateUsing(function ($state, ?Model $record = null) {
+                    return PrivacyBlurRenderer::applyMasking($state, $record, 'generic');
+                });
+            }
+
+            return $this;
+        });
+
+        ExportColumn::macro('maskUsing', function (Closure | string $strategy) {
+            /** @var ExportColumn $this */
+            $this->formatStateUsing(function ($state, ?Model $record = null) use ($strategy) {
+                return PrivacyBlurRenderer::applyMasking($state, $record, $strategy);
+            });
+
+            return $this;
+        });
 
         $macroMethods = self::buildMacroMethods();
 
@@ -280,7 +302,6 @@ class ColumnPrivacyMacros
             'revealNever' => function () {
                 /** @var Column|Entry|Field $this */
                 return PrivacyMetadataHelper::set($this, [
-                    'privacy_mode' => PrivacyMode::Blur,
                     'privacy_never_reveal' => true,
                 ]);
             },
