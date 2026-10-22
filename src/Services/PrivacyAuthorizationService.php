@@ -150,7 +150,7 @@ class PrivacyAuthorizationService
         ];
 
         foreach ($methods as $method => $isArray) {
-            if (is_callable([$user, $method])) {
+            if (method_exists($user, $method)) {
                 if ($isArray) {
                     $authorized = call_user_func([$user, $method], $roles);
                 } else {
@@ -191,7 +191,7 @@ class PrivacyAuthorizationService
         // Try multiple role checking methods
         $methods = ['hasAnyRole', 'hasRole', 'hasExactRole'];
         foreach ($methods as $method) {
-            if (is_callable([$user, $method])) {
+            if (method_exists($user, $method)) {
                 // hasAnyRole accepts array, hasRole usually accepts string
                 if ($method === 'hasAnyRole') {
                     if (call_user_func([$user, $method], $hiddenRoles)) {
