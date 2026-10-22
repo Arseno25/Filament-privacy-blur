@@ -68,7 +68,20 @@ jobs:
       - name: Install dependencies
         run: |
           composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" "filament/filament:${{ matrix.filament }}" --no-interaction --no-update
-          composer update --prefer-dist --no-interaction --no-scripts --no-audit
+          if [[ "${{ matrix.laravel }}" == "11.*" ]]; then
+            # No unflagged Laravel 11 releases are currently installable with
+            # Composer's advisory blocking. Override ONLY for this isolated
+            # compatibility test install, never in the package or production.
+            echo "::warning::Laravel 11 currently has known security advisories. This CI-only compatibility job installs affected dependencies; do not use this override in production."
+            COMPOSER_POLICY_ADVISORIES_BLOCK=0 composer update --prefer-dist --no-interaction --no-scripts --no-audit
+          else
+            composer update --prefer-dist --no-interaction --no-scripts --no-audit
+          fi
+
+      - name: Report Laravel 11 security advisories (non-blocking)
+        if: matrix.laravel == '11.*'
+        continue-on-error: true
+        run: composer audit --no-dev --format=summary
 
       - name: List Installed Dependencies
         run: composer show -D
